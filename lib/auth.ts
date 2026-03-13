@@ -3,7 +3,11 @@
 import { supabase } from "./supabaseClient";
 
 export async function registerWithEmail(email: string, password: string, name: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password }, { data: { name } });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name } },
+  });
   return { data, error };
 }
 
