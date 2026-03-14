@@ -1,6 +1,7 @@
 "use client";
 
 import AppNavbar from "@/components/ui/AppNavbar";
+import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,10 +20,16 @@ import { supabase } from "@/lib/supabaseClient";
 import { getUserProfile } from "@/lib/auth";
 import { normalizeQuestionText } from "@/utils/normalize";
 import { fetchUsersForAdmin, updateUserForAdmin, type UserRow } from "@/lib/users";
+import {
+  deleteBugReport,
+  fetchBugReports,
+  updateBugReportStatus,
+  type BugReportRow,
+} from "@/lib/bugReports";
 
 type StatusFilter = "all" | QuestionStatus;
 type TopicFilter = "all" | number;
-type AdminTab = "questions" | "users";
+type AdminTab = "questions" | "users" | "reports";
 
 const optionKeys = [
   { label: "A", key: "option_a" },
@@ -66,6 +73,7 @@ export default function AdminPage() {
   const [allQuestions, setAllQuestions] = useState<QuestionRow[]>([]);
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [bugReports, setBugReports] = useState<BugReportRow[]>([]);
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionRow | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,17 +88,19 @@ export default function AdminPage() {
   const [topicFilter, setTopicFilter] = useState<TopicFilter>("all");
 
   async function refreshData() {
-    const [topicsRes, pendingRes, allRes, usersRes] = await Promise.all([
+    const [topicsRes, pendingRes, allRes, usersRes, bugReportsRes] = await Promise.all([
       fetchTopics(true),
       fetchPendingQuestions(),
       fetchQuestionsForAdmin(),
       fetchUsersForAdmin(),
+      fetchBugReports(),
     ]);
 
     setTopics((topicsRes.data ?? []) as TopicRow[]);
     setPending((pendingRes.data ?? []) as QuestionRow[]);
     setAllQuestions((allRes.data ?? []) as QuestionRow[]);
     setUsers((usersRes.data ?? []) as UserRow[]);
+    setBugReports((bugReportsRes.data ?? []) as BugReportRow[]);
   }
 
   useEffect(() => {
@@ -229,8 +239,35 @@ export default function AdminPage() {
     await refreshData();
   }
 
+  async function handleResolveBugReport(id: number, status: "open" | "resolved") {
+    const { error } = await updateBugReportStatus(id, status);
+    if (error) {
+      setMessage(error.message || "Hata bildirimi güncellenemedi.");
+      return;
+    }
+    setMessage(status === "resolved" ? "Hata bildirimi çözüldü olarak işaretlendi." : "Hata bildirimi tekrar açık duruma alındı.");
+    await refreshData();
+  }
+
+  async function handleDeleteBugReport(id: number) {
+    if (!window.confirm("Bu hata bildirimini silmek istediğinize emin misiniz?")) return;
+    const { error } = await deleteBugReport(id);
+    if (error) {
+      setMessage(error.message || "Hata bildirimi silinemedi.");
+      return;
+    }
+    setMessage("Hata bildirimi silindi.");
+    await refreshData();
+  }
+
   if (loading) {
-    return <div className="min-h-screen bg-[var(--background)] p-4">Yükleniyor...</div>;
+    return (
+      <AppLoadingScreen
+        eyebrow="Yönetim"
+        title="Admin paneli hazırlanıyor"
+        description="Sorular, kullanıcılar ve hata bildirimleri yükleniyor."
+      />
+    );
   }
 
   if (unauthorized) {
@@ -260,7 +297,7 @@ export default function AdminPage() {
                 <p className="text-xs uppercase tracking-[0.2em] text-indigo-600">Admin Paneli</p>
                 <h1 className="text-2xl font-semibold text-[var(--foreground)]">Yönetim</h1>
                 <p className="text-sm text-[var(--foreground-muted)]">
-                  Soruları yönet, üyeleri düzenle ve admin notu tut.
+                  Soruları yönet, üyeleri düzenle ve hata bildirimlerini takip et.
                 </p>
               </div>
               <Link href="/dashboard/admin/topics" className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm">
@@ -278,15 +315,16 @@ export default function AdminPage() {
               <div className={mutedPanelClass}><p className="text-sm text-[var(--foreground-muted)]">Bekleyen Sorular</p><p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">{pending.length}</p></div>
               <div className={mutedPanelClass}><p className="text-sm text-[var(--foreground-muted)]">Toplam Sorular</p><p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">{allQuestions.length}</p></div>
               <div className={mutedPanelClass}><p className="text-sm text-[var(--foreground-muted)]">Toplam Üyeler</p><p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">{users.length}</p></div>
-              <div className={mutedPanelClass}><p className="text-sm text-[var(--foreground-muted)]">Aktif Üyeler</p><p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">{users.filter((user) => user.is_active).length}</p></div>
+              <div className={mutedPanelClass}><p className="text-sm text-[var(--foreground-muted)]">Hata Bildirimi</p><p className="mt-2 text-3xl font-semibold text-[var(--foreground)]">{bugReports.length}</p></div>
             </div>
 
-            <div className="mt-5 flex gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-2">
+            <div className="mt-5 flex flex-wrap gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-2">
               <button type="button" onClick={() => { setActiveTab("questions"); setSelectedUser(null); }} className={`rounded-xl px-4 py-2 text-sm font-semibold ${activeTab === "questions" ? "bg-[var(--surface)] text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}>Sorular</button>
               <button type="button" onClick={() => { setActiveTab("users"); setSelectedQuestion(null); }} className={`rounded-xl px-4 py-2 text-sm font-semibold ${activeTab === "users" ? "bg-[var(--surface)] text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}>Kullanıcılar</button>
+              <button type="button" onClick={() => { setActiveTab("reports"); setSelectedQuestion(null); setSelectedUser(null); }} className={`rounded-xl px-4 py-2 text-sm font-semibold ${activeTab === "reports" ? "bg-[var(--surface)] text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}>Hata Bildirimleri</button>
             </div>
 
-            {activeTab === "questions" ? (
+            {activeTab === "questions" && (
               <>
                 <section className={`mt-5 ${mutedPanelClass}`}>
                   <h2 className="text-base font-semibold text-[var(--foreground)]">Bekleyen Sorular ({pending.length})</h2>
@@ -339,7 +377,9 @@ export default function AdminPage() {
                   </div>
                 </section>
               </>
-            ) : (
+            )}
+
+            {activeTab === "users" && (
               <section className={`mt-5 ${mutedPanelClass}`}>
                 <h2 className="text-base font-semibold text-[var(--foreground)]">Kullanıcılar ({filteredUsers.length})</h2>
                 <div className="mt-3">
@@ -359,6 +399,50 @@ export default function AdminPage() {
                           <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${getUserStatusClass(user.is_active)}`}>{user.is_active ? "Aktif" : "Pasif"}</span>
                         </div>
                       </button>
+                    ))
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeTab === "reports" && (
+              <section className={`mt-5 ${mutedPanelClass}`}>
+                <h2 className="text-base font-semibold text-[var(--foreground)]">Hata Bildirimleri ({bugReports.length})</h2>
+                <div className="mt-3 space-y-3">
+                  {bugReports.length === 0 ? (
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--foreground-muted)]">Henüz hata bildirimi yok.</div>
+                  ) : (
+                    bugReports.map((report) => (
+                      <div key={report.id} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-[var(--foreground)]">{report.created_by_name}</p>
+                            <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase ${report.status === "resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                              {report.status === "resolved" ? "Çözüldü" : "Açık"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-[var(--foreground-muted)]">{formatDate(report.created_at)}</span>
+                        </div>
+                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-[var(--foreground-muted)]">
+                          {report.message}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleResolveBugReport(report.id, report.status === "resolved" ? "open" : "resolved")}
+                            className={`rounded-2xl px-4 py-2 text-xs font-semibold text-white ${report.status === "resolved" ? "bg-amber-500" : "bg-emerald-600"}`}
+                          >
+                            {report.status === "resolved" ? "Tekrar Aç" : "Çözüldü İşaretle"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBugReport(report.id)}
+                            className="rounded-2xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white"
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -406,6 +490,14 @@ export default function AdminPage() {
                     <button onClick={() => handleDelete(selectedQuestion.id)} className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white">Soruyu Sil</button>
                   </div>
                 </div>
+              ) : activeTab === "reports" ? (
+                <>
+                  <h2 className="text-lg font-semibold text-[var(--foreground)]">Takip Notu</h2>
+                  <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
+                    Hata bildirimleri menüden gelen kullanıcı mesajlarıdır. Şimdilik sadece listeleme var;
+                    istersen sonraki sürümde durum verme ve kapatma akışı ekleriz.
+                  </div>
+                </>
               ) : (
                 <>
                   <h2 className="text-lg font-semibold text-[var(--foreground)]">Detay Paneli</h2>

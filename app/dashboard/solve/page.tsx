@@ -72,9 +72,7 @@ export default function SolvePage() {
     setChoice(selected);
     const isCorrect = selected === currentQuestion.correct_option;
     setFeedback(
-      isCorrect
-        ? "Doğru cevap."
-        : `Yanlış cevap. Doğru seçenek: ${currentQuestion.correct_option}`
+      isCorrect ? "Doğru cevap." : `Yanlış cevap. Doğru seçenek: ${currentQuestion.correct_option}`
     );
     setShowExplanation(true);
   }
@@ -100,7 +98,7 @@ export default function SolvePage() {
     <main className="min-h-screen bg-[var(--background)]">
       <AppNavbar />
       <div className="p-4 sm:p-8">
-        <div className="mx-auto w-full max-w-3xl rounded-[32px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_94%,white)] p-5 shadow-[0_24px_80px_rgba(35,31,26,0.12)]">
+        <div className="mx-auto w-full max-w-3xl rounded-[34px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_96%,white)] p-5 shadow-[var(--shadow-strong)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Soru Çöz</p>
@@ -111,7 +109,7 @@ export default function SolvePage() {
             </div>
             <Link
               href="/dashboard/add-question"
-              className="inline-flex min-h-11 items-center rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-muted)]"
+              className="inline-flex min-h-11 items-center rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)] transition hover:bg-[var(--surface-muted)]"
             >
               Soru Ekle
             </Link>
@@ -123,7 +121,7 @@ export default function SolvePage() {
               <select
                 value={selectedTopicId}
                 onChange={(e) => setSelectedTopicId(e.target.value === "all" ? "all" : Number(e.target.value))}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
+                className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 shadow-[var(--shadow-soft)]"
                 disabled={!topics.length}
               >
                 <option value="all">Tüm Konular</option>
@@ -139,7 +137,7 @@ export default function SolvePage() {
               <select
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
+                className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 shadow-[var(--shadow-soft)]"
               >
                 <option value="ordered">Eklenme sırasına göre</option>
                 <option value="random">Karışık sırayla</option>
@@ -148,8 +146,25 @@ export default function SolvePage() {
           </div>
 
           {loading ? (
-            <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
-              Sorular yükleniyor...
+            <div className="mt-6 grid gap-4">
+              <div className="rounded-[30px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_92%,white),color-mix(in_srgb,var(--surface-strong)_72%,white))] px-6 py-8 shadow-[var(--shadow-soft)]">
+                <div className="h-4 w-24 animate-pulse rounded-full bg-[var(--surface-strong)]" />
+                <div className="mt-5 h-8 w-full animate-pulse rounded-2xl bg-[color:color-mix(in_srgb,var(--surface-strong)_76%,white)]" />
+                <div className="mt-3 h-8 w-4/5 animate-pulse rounded-2xl bg-[color:color-mix(in_srgb,var(--surface-strong)_76%,white)]" />
+              </div>
+              <div className="grid gap-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="rounded-[22px] border border-[var(--border)] bg-[var(--surface)] px-4 py-4 shadow-[var(--shadow-soft)]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--surface-muted)]" />
+                      <div className="h-4 w-full animate-pulse rounded-full bg-[var(--surface-muted)]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : !topics.length ? (
             <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
@@ -171,7 +186,7 @@ export default function SolvePage() {
                       <button
                         type="button"
                         onClick={previousQuestion}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--foreground)]"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                         aria-label="Önceki soru"
                       >
                         ←
@@ -179,7 +194,7 @@ export default function SolvePage() {
                       <button
                         type="button"
                         onClick={nextQuestion}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--foreground)]"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                         aria-label="Sonraki soru"
                       >
                         →
@@ -192,7 +207,7 @@ export default function SolvePage() {
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-[32px] border border-[color:color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_88%,#fff),color-mix(in_srgb,var(--surface-muted)_82%,#fff))] px-6 py-8 sm:px-7 sm:py-9">
+              <div className="overflow-hidden rounded-[34px] border border-[color:color-mix(in_srgb,var(--primary)_28%,var(--border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_92%,white),color-mix(in_srgb,var(--surface-strong)_72%,white))] px-6 py-8 shadow-[var(--shadow-soft)] sm:px-7 sm:py-9">
                 <h2 className="break-words text-2xl font-semibold leading-9 text-[var(--foreground)] sm:text-[2rem] sm:leading-10 [overflow-wrap:anywhere]">
                   {currentQuestion.question_text}
                 </h2>
@@ -209,7 +224,7 @@ export default function SolvePage() {
                   const isWrongChoice = isSelected && currentQuestion.correct_option !== option;
 
                   let className =
-                    "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_96%,white)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]";
+                    "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_97%,white)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]";
 
                   if (isCorrect) {
                     className = "border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200";
@@ -223,7 +238,7 @@ export default function SolvePage() {
                     <button
                       key={option}
                       onClick={() => handleAnswer(option)}
-                      className={`rounded-2xl border px-4 py-3 text-left transition ${className}`}
+                      className={`rounded-[22px] border px-4 py-3 text-left shadow-[var(--shadow-soft)] transition ${className}`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/6 text-sm font-semibold dark:bg-white/10">
@@ -240,7 +255,7 @@ export default function SolvePage() {
 
               {feedback && (
                 <div
-                  className={`rounded-2xl px-4 py-3 text-sm font-medium ${
+                  className={`rounded-2xl px-4 py-3 text-sm font-medium shadow-[var(--shadow-soft)] ${
                     choice === currentQuestion.correct_option
                       ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200"
                       : "bg-rose-50 text-rose-800 dark:bg-rose-950/30 dark:text-rose-200"
@@ -251,7 +266,7 @@ export default function SolvePage() {
               )}
 
               {showExplanation && (
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--foreground-muted)]">
+                <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--foreground-muted)] shadow-[var(--shadow-soft)]">
                   <p className="font-semibold text-[var(--foreground)]">Açıklama</p>
                   <p className="mt-1 break-words [overflow-wrap:anywhere]">
                     {currentQuestion.explanation?.trim() || "Bu soru için henüz açıklama eklenmemiş."}
@@ -262,7 +277,7 @@ export default function SolvePage() {
               {choice && (
                 <button
                   onClick={nextQuestion}
-                  className="min-h-12 rounded-2xl bg-[var(--foreground)] px-4 py-3 text-sm font-semibold text-[var(--surface)]"
+                  className="min-h-12 rounded-2xl bg-[var(--foreground)] px-4 py-3 text-sm font-semibold text-[var(--surface)] shadow-[var(--shadow-soft)]"
                 >
                   Sonraki Soru
                 </button>

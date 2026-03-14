@@ -3,15 +3,19 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const RELEASE_VERSION = "2026.03.mvp.1";
+const RELEASE_VERSION = "1.1.0";
 const RELEASE_TRIGGER_KEY = "release_notes_trigger";
 const RELEASE_DISMISSED_KEY = "release_notes_dismissed_version";
 
 const updates = [
-  "Mobil görünüm ve iPhone üst alan yerleşimi iyileştirildi.",
-  "Soru çöz ekranı sadeleştirildi ve görsel dil güncellendi.",
-  "Admin paneli, profil sayfası ve durum etiketleri Türkçeleştirildi.",
+  "Bazı hatalar giderildi.",
+  "Hata bildir bölümü eklendi.",
+  "Mobil görünümde çeşitli taşma ve yerleşim sorunları düzeltildi.",
+  "Soru çöz ekranı sadeleştirildi ve kullanım kolaylaştırıldı.",
+  "Profil ve genel arayüz metinleri Türkçeleştirildi.",
   "Kayıt ekranına kullanım koşulları ve sorumluluk beyanı eklendi.",
+  "Yükleme ekranları daha düzenli hale getirildi.",
+  "Genel tema ve görsel kalite iyileştirildi.",
 ];
 
 function shouldCheckPath(pathname: string) {
@@ -62,7 +66,7 @@ export default function ReleaseNotesModal() {
       <div className="w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
         <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Güncelleme Notu</p>
         <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
-          Mevcut sürümde neler değişti?
+          Sürüm {RELEASE_VERSION} ile neler değişti?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
           Uygulama daha düzenli, daha mobil uyumlu ve daha anlaşılır hale getirildi. Öne çıkan
@@ -91,6 +95,13 @@ export default function ReleaseNotesModal() {
             Bir sonraki güncelleme notuna kadar tekrar gösterme
           </span>
         </label>
+
+        <div className="mt-4 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)]/70 p-4">
+          <p className="text-xs leading-5 text-[var(--foreground-muted)]">
+            Not: Bu sürüm bir test sürümüdür. Gördüğünüz hata ve aksaklıkları menüdeki hata bildir
+            alanından iletmeniz beklenir.
+          </p>
+        </div>
 
         <div className="mt-4 flex justify-end">
           <button

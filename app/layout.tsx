@@ -12,8 +12,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2ede4" },
-    { media: "(prefers-color-scheme: dark)", color: "#131714" },
+    { media: "(prefers-color-scheme: light)", color: "#ece6dc" },
+    { media: "(prefers-color-scheme: dark)", color: "#111614" },
   ],
 };
 
@@ -42,7 +42,7 @@ export default function RootLayout({
         <div className="app-shell">
           <div className="app-content">{children}</div>
           <footer className="app-footer">
-            <p>© 2026 Fatih Çetinkaya. Tüm hakları saklıdır. Sürüm 1.0.1</p>
+            <p>© 2026 Fatih Çetinkaya. Tüm hakları saklıdır. Sürüm 1.1.0</p>
           </footer>
         </div>
       </body>

@@ -1,10 +1,37 @@
 "use client";
 
-import Link from "next/link";
 import AppNavbar from "@/components/ui/AppNavbar";
+import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
+
+const featureCards = [
+  {
+    eyebrow: "Yakında",
+    title: "Sınıf Listesi",
+    description:
+      "Kim var, kim yok, kim yine son dakika yetişmiş... bunları burada toparlarız.",
+  },
+  {
+    eyebrow: "Hazırlanıyor",
+    title: "Ders Programı",
+    description:
+      "Hangi gün ne var, ne zaman var, moral bozacak kadar erken mi başlıyor, hepsi burada olur.",
+  },
+  {
+    eyebrow: "Planlanan",
+    title: "Duyurular",
+    description:
+      "Kısa notlar, değişiklikler ve önemli hatırlatmalar için sade bir alan gelecek.",
+  },
+  {
+    eyebrow: "Sırada",
+    title: "Hızlı Notlar",
+    description:
+      "Kafaya takılan küçük şeyleri unutmadan yazmak için hafif bir bölüm ekleyeceğiz.",
+  },
+];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -44,13 +71,14 @@ export default function DashboardPage() {
     void load();
   }, [router]);
 
-  async function handleSignOut() {
-    await signOut();
-    router.push("/");
-  }
-
   if (loading) {
-    return <div className="min-h-screen bg-[var(--background)] p-4">Yükleniyor...</div>;
+    return (
+      <AppLoadingScreen
+        eyebrow="Dashboard"
+        title="Ana ekran hazırlanıyor"
+        description="Kutular yerleşiyor, düzen kuruluyor."
+      />
+    );
   }
 
   return (
@@ -58,108 +86,38 @@ export default function DashboardPage() {
       <AppNavbar />
       <div className="p-4 sm:p-8">
         <div className="mx-auto max-w-5xl space-y-5">
-          <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">
-                  Çalışma Alanı
+          <section className="overflow-hidden rounded-[32px] border border-[var(--border)] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--surface)_96%,white),color-mix(in_srgb,var(--surface-muted)_84%,white))] p-6 shadow-[var(--shadow-strong)]">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--primary)]">Dashboard</p>
+              <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)] sm:text-4xl">
+                Hoş geldin, {name}
+              </h1>
+              <p className="mt-3 text-sm leading-7 text-[var(--foreground-muted)] sm:text-base">
+                Burası artık boş bir yönlendirme alanı değil. Yavaş yavaş işe yarayan şeylerle dolduracağız.
+                Şimdilik kutular hazır, içerikleri sırayla oturturuz.
+              </p>
+              {isAdmin && (
+                <p className="mt-4 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground-muted)] shadow-[var(--shadow-soft)]">
+                  Admin görünümündesin, ama korkma yine sade gideceğiz.
                 </p>
-                <h1 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
-                  Hoş geldin, {name}
-                </h1>
-                <p className="mt-2 text-sm leading-7 text-[var(--foreground-muted)]">
-                  Bugün hangi akıştan devam edeceğine buradan karar ver. Soru çözebilir,
-                  yeni soru ekleyebilir ve hesabını kontrol edebilirsin.
-                </p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+              )}
+            </div>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2">
+            {featureCards.map((card) => (
+              <article
+                key={card.title}
+                className="rounded-[28px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_96%,white)] p-5 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:bg-[color:color-mix(in_srgb,var(--surface-muted)_58%,white)]"
               >
-                Çıkış Yap
-              </button>
-            </div>
-          </section>
-
-          <section className="grid gap-4 md:grid-cols-3">
-            <Link
-              href="/dashboard/solve"
-              className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition hover:bg-[var(--surface-muted)]"
-            >
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Çözüm</p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Soru Çöz</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-                Konu seç, soruları sırayla çöz ve açıklamayı anında gör.
-              </p>
-            </Link>
-            <Link
-              href="/dashboard/add-question"
-              className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition hover:bg-[var(--surface-muted)]"
-            >
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Katkı</p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Soru Ekle</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-                Yeni sorunu ekle, beklemeye gönder ve admin onayını bekle.
-              </p>
-            </Link>
-            <Link
-              href="/dashboard/profile"
-              className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition hover:bg-[var(--surface-muted)]"
-            >
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Hesap</p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Profil</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-                Kendi bilgilerini ve eklediğin soru özetini görüntüle.
-              </p>
-            </Link>
-          </section>
-
-          <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
-            <div className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">
-                Başlangıç Akışı
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
-                İlk kullanım sırası
-              </h2>
-              <ol className="mt-4 space-y-3 text-sm leading-6 text-[var(--foreground-muted)]">
-                <li>1. Önce çözmek istediğin konuyu belirle.</li>
-                <li>2. Soru çöz ekranında akışın doğru çalıştığını kontrol et.</li>
-                <li>3. Yeni soru ekleyip bekleme sürecini test et.</li>
-                {isAdmin && <li>4. Admin panelinden kullanıcı ve soru akışını yönet.</li>}
-              </ol>
-            </div>
-
-            <div className="rounded-[28px] border border-[var(--border)] bg-[var(--surface-muted)] p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
-                Hızlı Erişim
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
-                Bugün nereden başlayacaksın?
-              </h2>
-              <div className="mt-4 grid gap-3">
-                <Link
-                  href="/dashboard/solve"
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                >
-                  Soru çöz ekranını aç
-                </Link>
-                <Link
-                  href="/dashboard/add-question"
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                >
-                  Yeni soru gönder
-                </Link>
-                {isAdmin && (
-                  <Link
-                    href="/dashboard/admin"
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                  >
-                    Admin yönetimini aç
-                  </Link>
-                )}
-              </div>
-            </div>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">{card.eyebrow}</p>
+                <h2 className="mt-3 text-2xl font-semibold text-[var(--foreground)]">{card.title}</h2>
+                <p className="mt-3 text-sm leading-7 text-[var(--foreground-muted)]">
+                  {card.description}
+                </p>
+                <div className="mt-5 h-2 w-24 rounded-full bg-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]" />
+              </article>
+            ))}
           </section>
         </div>
       </div>

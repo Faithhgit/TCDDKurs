@@ -1,6 +1,7 @@
 "use client";
 
 import AppNavbar from "@/components/ui/AppNavbar";
+import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import { useEffect, useState } from "react";
 import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
 import { useRouter } from "next/navigation";
@@ -73,7 +74,13 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-[var(--background)] p-4">Yükleniyor...</div>;
+    return (
+      <AppLoadingScreen
+        eyebrow="Profil"
+        title="Profil bilgilerin hazırlanıyor"
+        description="Hesabın ve soru özetin getiriliyor."
+      />
+    );
   }
 
   return (
