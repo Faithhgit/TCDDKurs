@@ -73,7 +73,7 @@ export default function AddQuestionPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [userId, setUserId] = useState("");
   const [name, setName] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [canDirectPublish, setCanDirectPublish] = useState(false);
   const [similarQuestions, setSimilarQuestions] = useState<SimilarQuestion[]>([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
@@ -107,7 +107,9 @@ export default function AddQuestionPage() {
 
       setUserId(data.user.id);
       setName(resolvedName);
-      setIsAdmin(profileRes.data?.role === "admin");
+      setCanDirectPublish(
+        profileRes.data?.role === "admin" || profileRes.data?.role === "manager"
+      );
 
       if (topicsRes.data) {
         const fetchedTopics = topicsRes.data as TopicRow[];
@@ -186,7 +188,7 @@ export default function AddQuestionPage() {
       created_by_user_id: userId,
       created_by_name: finalName,
       normalized_question_text: normalizedQuestion,
-      status: isAdmin ? "approved" : "pending",
+      status: canDirectPublish ? "approved" : "pending",
     });
 
     if (insertError) {
@@ -211,7 +213,7 @@ export default function AddQuestionPage() {
 
     setLoading(false);
     setSuccess(
-      isAdmin
+      canDirectPublish
         ? `Soru kaydedildi, direkt yayına girdi.${imageMessage}`
         : `Soru kaydedildi. Admin bakınca yayına alınır.${imageMessage}`
     );
@@ -257,7 +259,7 @@ export default function AddQuestionPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Soru Ekle</p>
             <h1 className="text-xl font-semibold text-[var(--foreground)]">Yeni Soru Bırak</h1>
             <p className="text-sm text-[var(--foreground-muted)]">
-              {isAdmin ? "Adminsen soru direkt yayına girebilir." : "Soruyu bırak, admin bakınca yayına alır."}
+              {canDirectPublish ? "Yönetim hesabındaysan soru direkt yayına girebilir." : "Soruyu bırak, admin bakınca yayına alır."}
             </p>
           </div>
 

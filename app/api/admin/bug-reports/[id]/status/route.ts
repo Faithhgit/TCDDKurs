@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/server/auth";
+
+import { requireManager } from "@/lib/server/auth";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAdmin(request);
+  const auth = await requireManager(request);
   if ("error" in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

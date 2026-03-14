@@ -15,7 +15,7 @@ const routes = [
 
 export default function AppNavbar() {
   const path = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<"student" | "admin" | "manager">("student");
   const [menuOpen, setMenuOpen] = useState(false);
   const [bugModalOpen, setBugModalOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -38,7 +38,7 @@ export default function AppNavbar() {
         return;
       }
 
-      setIsAdmin(profile?.role === "admin");
+      setRole((profile?.role as "student" | "admin" | "manager") ?? "student");
     }
 
     void loadRole();
@@ -115,7 +115,7 @@ export default function AppNavbar() {
                 >
                   Hata Bildir
                 </button>
-                {isAdmin && (
+                {role !== "student" && (
                   <Link
                     href="/dashboard/admin"
                     onClick={() => setMenuOpen(false)}

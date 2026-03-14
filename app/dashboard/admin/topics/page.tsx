@@ -1,24 +1,31 @@
 "use client";
 
-import AppNavbar from "@/components/ui/AppNavbar";
 import { startTransition, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import AppNavbar from "@/components/ui/AppNavbar";
+import { getUserProfile } from "@/lib/auth";
 import { addTopic, fetchTopics, updateTopic, type TopicRow } from "@/lib/questions";
+import { supabase } from "@/lib/supabaseClient";
 
 function toSlug(value: string) {
   return value
     .toLocaleLowerCase("tr-TR")
     .trim()
     .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-ğüşöçıİ]/gi, "")
+    .replace(/[^a-z0-9-ğüşıöç]/gi, "")
     .replace(/-+/g, "-");
 }
 
 export default function TopicsAdminPage() {
+  const router = useRouter();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editSlug, setEditSlug] = useState("");
@@ -30,12 +37,29 @@ export default function TopicsAdminPage() {
   }
 
   useEffect(() => {
-    void fetchTopics(true).then(({ data }) => {
+    async function load() {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const profile = await getUserProfile(data.user.id);
+      if (!profile.data || profile.data.role !== "manager") {
+        setUnauthorized(true);
+        setPageLoading(false);
+        return;
+      }
+
+      const result = await fetchTopics(true);
       startTransition(() => {
-        setTopics((data ?? []) as TopicRow[]);
+        setTopics((result.data ?? []) as TopicRow[]);
+        setPageLoading(false);
       });
-    });
-  }, []);
+    }
+
+    void load();
+  }, [router]);
 
   function resetEditForm() {
     setEditingTopicId(null);
@@ -48,7 +72,7 @@ export default function TopicsAdminPage() {
     setMessage("");
 
     if (!title.trim()) {
-      setMessage("Lütfen konu başlığı girin.");
+      setMessage("Lütfen konu başlığı gir.");
       return;
     }
 
@@ -91,7 +115,7 @@ export default function TopicsAdminPage() {
 
     const finalSlug = toSlug(editSlug || editTitle);
     if (!editTitle.trim() || !finalSlug) {
-      setMessage("Konu başlığı ve slug zorunludur.");
+      setMessage("Konu başlığı ve slug zorunlu.");
       return;
     }
 
@@ -129,6 +153,26 @@ export default function TopicsAdminPage() {
 
     setMessage(topic.is_active ? "Konu pasife alındı." : "Konu tekrar aktifleştirildi.");
     await refreshTopics();
+  }
+
+  if (pageLoading) {
+    return null;
+  }
+
+  if (unauthorized) {
+    return (
+      <main className="min-h-screen bg-[var(--background)]">
+        <AppNavbar />
+        <div className="p-4 sm:p-8">
+          <div className="mx-auto w-full max-w-3xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
+            <h1 className="text-2xl font-semibold text-[var(--foreground)]">Burası sadece yöneticiye açık</h1>
+            <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+              Adminler burada konu düzenleyemez.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

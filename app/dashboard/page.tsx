@@ -1,10 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
 import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 const featureCards = [
   {
@@ -33,7 +34,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<"student" | "admin" | "manager">("student");
 
   useEffect(() => {
     async function load() {
@@ -56,7 +57,7 @@ export default function DashboardPage() {
         }
 
         setName(profile.name || data.user.user_metadata?.name || data.user.email || "Arkadaş");
-        setIsAdmin(profile.role === "admin");
+        setRole((profile.role as "student" | "admin" | "manager") ?? "student");
       } else {
         setName(data.user.user_metadata?.name || data.user.email || "Arkadaş");
       }
@@ -89,12 +90,13 @@ export default function DashboardPage() {
                 Hoş geldin, {name}
               </h1>
               <p className="mt-3 text-sm leading-7 text-[var(--foreground-muted)] sm:text-base">
-                Burası yavaş yavaş dolacak. Şimdilik temel akış çalışıyor, bundan sonra gerçekten işe
-                yarayan bölümleri tek tek koyacağız.
+                Burası yavaş yavaş dolacak. Şimdilik temel akış çalışıyor, bundan sonra gerçekten işe yarayan bölümleri tek tek koyacağız.
               </p>
-              {isAdmin && (
+              {role !== "student" && (
                 <p className="mt-4 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground-muted)] shadow-[var(--shadow-soft)]">
-                  Admin tarafındasın ama korkma, yine sade gidiyoruz.
+                  {role === "manager"
+                    ? "Yönetici tarafındasın, kritik düğmeler sende."
+                    : "Admin tarafındasın ama korkma, yine sade gidiyoruz."}
                 </p>
               )}
             </div>

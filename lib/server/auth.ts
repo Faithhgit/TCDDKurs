@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
+
 import { supabaseAdmin } from "./supabaseAdmin";
+
+export type StaffRole = "admin" | "manager";
 
 function getBearerToken(request: NextRequest) {
   const authorization = request.headers.get("authorization") ?? "";
@@ -48,8 +51,21 @@ export async function requireAdmin(request: NextRequest) {
     return authResult;
   }
 
-  if (authResult.profile.role !== "admin") {
-    return { error: "Bu işlem için admin yetkisi gerekiyor.", status: 403 as const };
+  if (!["admin", "manager"].includes(String(authResult.profile.role))) {
+    return { error: "Bu işlem için yönetim yetkisi gerekiyor.", status: 403 as const };
+  }
+
+  return authResult;
+}
+
+export async function requireManager(request: NextRequest) {
+  const authResult = await requireUser(request);
+  if ("error" in authResult) {
+    return authResult;
+  }
+
+  if (authResult.profile.role !== "manager") {
+    return { error: "Bu işlem sadece yöneticiye açık.", status: 403 as const };
   }
 
   return authResult;

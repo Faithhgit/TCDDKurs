@@ -2,7 +2,7 @@
 
 import { supabase } from "./supabaseClient";
 
-export type UserRole = "student" | "admin";
+export type UserRole = "student" | "admin" | "manager";
 
 export type UserRow = {
   id: string;
