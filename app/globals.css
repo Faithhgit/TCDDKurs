@@ -63,6 +63,29 @@ body {
   transition: background-color 160ms ease, color 160ms ease;
 }
 
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+}
+
+.app-footer {
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+}
+
+.app-footer p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--foreground-muted) 72%, transparent);
+  letter-spacing: 0.04em;
+}
+
 body::before {
   content: "";
   position: fixed;

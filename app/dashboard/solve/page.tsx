@@ -34,11 +34,7 @@ export default function SolvePage() {
     async function loadData() {
       setLoading(true);
       const topicsRes = await fetchTopics();
-      if (topicsRes.data?.length) {
-        setTopics(topicsRes.data as TopicRow[]);
-      } else {
-        setTopics([]);
-      }
+      setTopics((topicsRes.data ?? []) as TopicRow[]);
       setLoading(false);
     }
 
@@ -62,10 +58,7 @@ export default function SolvePage() {
     void loadQuestions();
   }, [selectedTopicId, sortMode]);
 
-  const currentQuestion = useMemo(
-    () => questions[currentIndex] ?? null,
-    [questions, currentIndex]
-  );
+  const currentQuestion = useMemo(() => questions[currentIndex] ?? null, [questions, currentIndex]);
 
   function resetAnswerState() {
     setChoice("");
@@ -88,14 +81,12 @@ export default function SolvePage() {
 
   function nextQuestion() {
     if (!questions.length) return;
-
     setCurrentIndex((prev) => (prev + 1 < questions.length ? prev + 1 : 0));
     resetAnswerState();
   }
 
   function previousQuestion() {
     if (!questions.length) return;
-
     setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : questions.length - 1));
     resetAnswerState();
   }
@@ -131,9 +122,7 @@ export default function SolvePage() {
               <label className="block text-sm font-medium text-[var(--foreground)]">Konu Seç</label>
               <select
                 value={selectedTopicId}
-                onChange={(e) =>
-                  setSelectedTopicId(e.target.value === "all" ? "all" : Number(e.target.value))
-                }
+                onChange={(e) => setSelectedTopicId(e.target.value === "all" ? "all" : Number(e.target.value))}
                 className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
                 disabled={!topics.length}
               >

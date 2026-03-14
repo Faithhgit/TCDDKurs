@@ -57,59 +57,109 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-[var(--background)]">
       <AppNavbar />
       <div className="p-4 sm:p-8">
-        <div className="mx-auto max-w-4xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Dashboard</p>
-              <h1 className="mt-1 text-2xl font-semibold text-[var(--foreground)]">Hoş geldin, {name}</h1>
-              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                Konu seçip soru çözmeye ve yeni soru eklemeye başlayabilirsin.
-              </p>
+        <div className="mx-auto max-w-5xl space-y-5">
+          <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">
+                  Çalışma Alanı
+                </p>
+                <h1 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
+                  Hoş geldin, {name}
+                </h1>
+                <p className="mt-2 text-sm leading-7 text-[var(--foreground-muted)]">
+                  Bugün hangi akıştan devam edeceğine buradan karar ver. Soru çözebilir,
+                  yeni soru ekleyebilir ve hesabını kontrol edebilirsin.
+                </p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+              >
+                Çıkış Yap
+              </button>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="rounded-2xl bg-[var(--foreground)] px-4 py-2 text-sm font-semibold text-[var(--surface)]"
-            >
-              Çıkış Yap
-            </button>
-          </div>
+          </section>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <section className="grid gap-4 md:grid-cols-3">
             <Link
               href="/dashboard/solve"
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
+              className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition hover:bg-[var(--surface-muted)]"
             >
-              Soru Çöz
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Çözüm</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Soru Çöz</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
+                Konu seç, soruları sırayla çöz ve açıklamayı anında gör.
+              </p>
             </Link>
             <Link
               href="/dashboard/add-question"
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
+              className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition hover:bg-[var(--surface-muted)]"
             >
-              Soru Ekle
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Katkı</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Soru Ekle</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
+                Yeni sorunu ekle, beklemeye gönder ve admin onayını bekle.
+              </p>
             </Link>
             <Link
               href="/dashboard/profile"
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
+              className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition hover:bg-[var(--surface-muted)]"
             >
-              Profil
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Hesap</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Profil</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
+                Kendi bilgilerini ve eklediğin soru özetini görüntüle.
+              </p>
             </Link>
-            {isAdmin && (
-              <Link
-                href="/dashboard/admin"
-                className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
-              >
-                Admin
-              </Link>
-            )}
-          </div>
+          </section>
 
-          <section className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">İlk kullanım sırası</h2>
-            <ul className="mt-2 list-decimal space-y-1 pl-5 text-sm text-[var(--foreground-muted)]">
-              <li>Admin panelinden aktif konuları kontrol et.</li>
-              <li>Yeni sorular ekle ve onay sürecine gönder.</li>
-              <li>Onaylanan soruları çözme ekranında test et.</li>
-            </ul>
+          <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+            <div className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">
+                Başlangıç Akışı
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
+                İlk kullanım sırası
+              </h2>
+              <ol className="mt-4 space-y-3 text-sm leading-6 text-[var(--foreground-muted)]">
+                <li>1. Önce çözmek istediğin konuyu belirle.</li>
+                <li>2. Soru çöz ekranında akışın doğru çalıştığını kontrol et.</li>
+                <li>3. Yeni soru ekleyip bekleme sürecini test et.</li>
+                {isAdmin && <li>4. Admin panelinden kullanıcı ve soru akışını yönet.</li>}
+              </ol>
+            </div>
+
+            <div className="rounded-[28px] border border-[var(--border)] bg-[var(--surface-muted)] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+                Hızlı Erişim
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
+                Bugün nereden başlayacaksın?
+              </h2>
+              <div className="mt-4 grid gap-3">
+                <Link
+                  href="/dashboard/solve"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                >
+                  Soru çöz ekranını aç
+                </Link>
+                <Link
+                  href="/dashboard/add-question"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                >
+                  Yeni soru gönder
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/dashboard/admin"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  >
+                    Admin yönetimini aç
+                  </Link>
+                )}
+              </div>
+            </div>
           </section>
         </div>
       </div>

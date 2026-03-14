@@ -39,7 +39,12 @@ export default function RootLayout({
       <body className="antialiased" suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ReleaseNotesModal />
-        {children}
+        <div className="app-shell">
+          <div className="app-content">{children}</div>
+          <footer className="app-footer">
+            <p>© 2026 Fatih Çetinkaya. Tüm hakları saklıdır. Sürüm 1.0.1</p>
+          </footer>
+        </div>
       </body>
     </html>
   );

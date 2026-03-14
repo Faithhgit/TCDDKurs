@@ -26,9 +26,7 @@ export default function TopicsAdminPage() {
 
   async function refreshTopics() {
     const { data } = await fetchTopics(true);
-    if (data) {
-      setTopics(data as TopicRow[]);
-    }
+    if (data) setTopics(data as TopicRow[]);
   }
 
   useEffect(() => {
@@ -67,16 +65,15 @@ export default function TopicsAdminPage() {
 
     setLoading(true);
     const { error } = await addTopic({ title: title.trim(), slug: finalSlug });
+    setLoading(false);
 
     if (error) {
-      setLoading(false);
       setMessage(error.message);
       return;
     }
 
     setTitle("");
     setSlug("");
-    setLoading(false);
     setMessage("Konu eklendi.");
     await refreshTopics();
   }
@@ -109,7 +106,6 @@ export default function TopicsAdminPage() {
       slug: finalSlug,
       is_active: editActive,
     });
-
     setLoading(false);
 
     if (error) {
@@ -160,9 +156,7 @@ export default function TopicsAdminPage() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setTitle(value);
-                    if (!slug) {
-                      setSlug(toSlug(value));
-                    }
+                    if (!slug) setSlug(toSlug(value));
                   }}
                   placeholder="Konu başlığı"
                   className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
@@ -204,11 +198,7 @@ export default function TopicsAdminPage() {
                     className="min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
                   />
                   <label className="flex items-center gap-2 text-sm text-[var(--foreground)]">
-                    <input
-                      type="checkbox"
-                      checked={editActive}
-                      onChange={(e) => setEditActive(e.target.checked)}
-                    />
+                    <input type="checkbox" checked={editActive} onChange={(e) => setEditActive(e.target.checked)} />
                     Aktif konu olarak kalsın
                   </label>
                   <div className="flex gap-2">
@@ -219,10 +209,7 @@ export default function TopicsAdminPage() {
                     >
                       Kaydet
                     </button>
-                    <button
-                      onClick={resetEditForm}
-                      className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                    >
+                    <button onClick={resetEditForm} className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm">
                       Vazgeç
                     </button>
                   </div>
@@ -249,10 +236,7 @@ export default function TopicsAdminPage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => startEditing(topic)}
-                        className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                      >
+                      <button onClick={() => startEditing(topic)} className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm">
                         Düzenle
                       </button>
                       <button

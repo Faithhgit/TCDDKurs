@@ -80,55 +80,55 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[var(--background)]">
       <AppNavbar />
       <div className="p-4 sm:p-8">
-        <div className="mx-auto w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-md">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Profil</p>
-              <h1 className="text-2xl font-semibold text-[var(--foreground)]">Hesap Bilgileri</h1>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Çıkış
-            </button>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
-                Ad Soyad
-              </p>
-              <p className="mt-2 font-medium text-[var(--foreground)]">{name}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
-                E-posta
-              </p>
-              <p className="mt-2 break-all font-medium text-[var(--foreground)]">{userEmail}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Rol</p>
-              <p className="mt-2 font-medium capitalize text-[var(--foreground)]">
-                {role === "admin" ? "Admin" : "Öğrenci"}
-              </p>
-            </div>
-          </div>
-
-          <section className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+        <div className="mx-auto w-full max-w-3xl space-y-5">
+          <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-md">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
-                  Sorduğun Sorular
-                </p>
-                <h2 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                  Toplam {stats.total} soru
-                </h2>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Profil</p>
+                <h1 className="text-2xl font-semibold text-[var(--foreground)]">Hesap Bilgileri</h1>
               </div>
+              <button
+                onClick={handleSignOut}
+                className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Çıkış
+              </button>
             </div>
 
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+                  Ad Soyad
+                </p>
+                <p className="mt-2 font-medium text-[var(--foreground)]">{name}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+                  E-posta
+                </p>
+                <p className="mt-2 break-all font-medium text-[var(--foreground)]">{userEmail}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+                  Rol
+                </p>
+                <p className="mt-2 font-medium capitalize text-[var(--foreground)]">
+                  {role === "admin" ? "Admin" : "Öğrenci"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">
+              Sorduğun Sorular
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
+              Toplam {stats.total} soru ekledin
+            </h2>
+
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+              <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
                 <p className="text-[11px] font-medium text-[var(--foreground-muted)] sm:text-xs sm:uppercase sm:tracking-[0.16em]">
                   Toplam
                 </p>

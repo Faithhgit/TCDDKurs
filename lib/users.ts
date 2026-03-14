@@ -36,5 +36,23 @@ export async function updateUserForAdmin(
   id: string,
   input: Partial<Pick<UserRow, "name" | "email" | "role" | "is_active" | "admin_note">>
 ) {
-  return await supabase.from("users").update(input).eq("id", id);
+  const primary = await supabase
+    .from("users")
+    .update(input)
+    .eq("id", id)
+    .select("id, name, email, role, is_active, admin_note, created_at")
+    .single();
+
+  if (!primary.error) {
+    return primary;
+  }
+
+  const fallback = await supabase
+    .from("users")
+    .update(input)
+    .eq("id", id)
+    .select("id, name, role, is_active, created_at")
+    .single();
+
+  return fallback;
 }
