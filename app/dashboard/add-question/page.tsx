@@ -36,6 +36,7 @@ export default function AddQuestionPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [userId, setUserId] = useState("");
   const [name, setName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [similarQuestions, setSimilarQuestions] = useState<SimilarQuestion[]>([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
 
@@ -66,6 +67,7 @@ export default function AddQuestionPage() {
 
       setUserId(data.user.id);
       setName(resolvedName);
+      setIsAdmin(profileRes.data?.role === "admin");
 
       if (topicsRes.data) {
         const fetchedTopics = topicsRes.data as TopicRow[];
@@ -144,6 +146,7 @@ export default function AddQuestionPage() {
       created_by_user_id: userId,
       created_by_name: finalName,
       normalized_question_text: normalizedQuestion,
+      status: isAdmin ? "approved" : "pending",
     });
 
     setLoading(false);
@@ -153,7 +156,11 @@ export default function AddQuestionPage() {
       return;
     }
 
-    setSuccess("Soru kaydedildi. Admin onayından sonra yayına alınacak.");
+    setSuccess(
+      isAdmin
+        ? "Soru kaydedildi ve doğrudan yayına alındı."
+        : "Soru kaydedildi. Admin onayından sonra yayına alınacak."
+    );
     setQuestion("");
     setOptionA("");
     setOptionB("");
@@ -173,7 +180,9 @@ export default function AddQuestionPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Soru Ekle</p>
             <h1 className="text-xl font-semibold text-[var(--foreground)]">Yeni Soru Gönder</h1>
             <p className="text-sm text-[var(--foreground-muted)]">
-              Sorular önce beklemeye alınır, sonra admin onaylar.
+              {isAdmin
+                ? "Admin soruları doğrudan onaylı olarak ekleyebilir."
+                : "Sorular önce beklemeye alınır, sonra admin onaylar."}
             </p>
           </div>
 
@@ -268,9 +277,7 @@ export default function AddQuestionPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
-                  Açıklama
-                </label>
+                <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Açıklama</label>
                 <textarea
                   value={explanation}
                   onChange={(e) => setExplanation(e.target.value)}

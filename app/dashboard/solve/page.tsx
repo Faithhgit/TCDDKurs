@@ -6,18 +6,6 @@ import Link from "next/link";
 import { fetchQuestionsByTopic, fetchTopics, type QuestionRow, type TopicRow } from "@/lib/questions";
 
 type TopicFilterValue = "all" | number;
-type SortMode = "ordered" | "random";
-
-function shuffleQuestions(items: QuestionRow[]) {
-  const next = [...items];
-
-  for (let index = next.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [next[index], next[randomIndex]] = [next[randomIndex], next[index]];
-  }
-
-  return next;
-}
 
 export default function SolvePage() {
   const [topics, setTopics] = useState<TopicRow[]>([]);
@@ -28,7 +16,6 @@ export default function SolvePage() {
   const [feedback, setFeedback] = useState("");
   const [showExplanation, setShowExplanation] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortMode, setSortMode] = useState<SortMode>("ordered");
 
   useEffect(() => {
     async function loadData() {
@@ -47,7 +34,7 @@ export default function SolvePage() {
       const topicId = selectedTopicId === "all" ? null : selectedTopicId;
       const { data } = await fetchQuestionsByTopic(topicId);
       const list = (data ?? []) as QuestionRow[];
-      setQuestions(sortMode === "random" ? shuffleQuestions(list) : list);
+      setQuestions(list);
       setCurrentIndex(0);
       setChoice("");
       setFeedback("");
@@ -56,7 +43,7 @@ export default function SolvePage() {
     }
 
     void loadQuestions();
-  }, [selectedTopicId, sortMode]);
+  }, [selectedTopicId]);
 
   const currentQuestion = useMemo(() => questions[currentIndex] ?? null, [questions, currentIndex]);
 
@@ -115,7 +102,7 @@ export default function SolvePage() {
             </Link>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-5">
             <div>
               <label className="block text-sm font-medium text-[var(--foreground)]">Konu Seç</label>
               <select
@@ -130,17 +117,6 @@ export default function SolvePage() {
                     {topic.title}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--foreground)]">Sıralama</label>
-              <select
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 shadow-[var(--shadow-soft)]"
-              >
-                <option value="ordered">Eklenme sırasına göre</option>
-                <option value="random">Karışık sırayla</option>
               </select>
             </div>
           </div>

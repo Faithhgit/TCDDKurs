@@ -99,8 +99,11 @@ export async function insertQuestion(question: {
   created_by_user_id: string;
   created_by_name: string;
   normalized_question_text: string;
+  status?: QuestionStatus;
 }) {
-  return await supabase.from("questions").insert([{ ...question, status: "pending" }]);
+  return await supabase
+    .from("questions")
+    .insert([{ ...question, status: question.status ?? "pending" }]);
 }
 
 export async function updateQuestion(
