@@ -4,7 +4,7 @@ import Link from "next/link";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getUser, getUserProfile, signOut } from "@/lib/auth";
+import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -22,6 +22,16 @@ export default function DashboardPage() {
 
       const { data: profile } = await getUserProfile(data.user.id);
       if (profile) {
+        if (profile.is_active === false) {
+          await signOut();
+          router.push("/auth/login");
+          return;
+        }
+
+        if (data.user.email) {
+          void syncUserProfileEmail(data.user.id, data.user.email);
+        }
+
         setName(profile.name || data.user.user_metadata?.name || data.user.email || "Öğrenci");
         setIsAdmin(profile.role === "admin");
       } else {
@@ -51,9 +61,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Dashboard</p>
-              <h1 className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
-                Hoş geldin, {name}
-              </h1>
+              <h1 className="mt-1 text-2xl font-semibold text-[var(--foreground)]">Hoş geldin, {name}</h1>
               <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                 Konu seçip soru çözmeye ve yeni soru eklemeye başlayabilirsin.
               </p>

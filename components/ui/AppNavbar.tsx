@@ -25,9 +25,15 @@ export default function AppNavbar() {
 
       const { data: profile } = await supabase
         .from("users")
-        .select("role")
+        .select("role, is_active")
         .eq("id", userData.user.id)
         .single();
+
+      if (profile?.is_active === false) {
+        await supabase.auth.signOut();
+        window.location.href = "/auth/login";
+        return;
+      }
 
       if (profile?.role === "admin") {
         setIsAdmin(true);

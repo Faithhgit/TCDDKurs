@@ -2,7 +2,7 @@
 
 import AppNavbar from "@/components/ui/AppNavbar";
 import { useEffect, useState } from "react";
-import { getUser, getUserProfile, signOut } from "@/lib/auth";
+import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { fetchQuestionsByUser } from "@/lib/questions";
 
@@ -35,6 +35,16 @@ export default function ProfilePage() {
       }
 
       const profile = await getUserProfile(data.user.id);
+      if (profile.data?.is_active === false) {
+        await signOut();
+        router.push("/auth/login");
+        return;
+      }
+
+      if (data.user.email) {
+        void syncUserProfileEmail(data.user.id, data.user.email);
+      }
+
       const questions = await fetchQuestionsByUser(data.user.id);
       const questionStats = (questions.data ?? []).reduce<QuestionStats>(
         (acc, item) => {

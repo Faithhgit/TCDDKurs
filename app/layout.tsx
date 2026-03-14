@@ -1,9 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import ReleaseNotesModal from "@/components/ui/ReleaseNotesModal";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Soru Çözme Uygulaması",
   description: "Kurs için soru çözme ve soru ekleme platformu",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2ede4" },
+    { media: "(prefers-color-scheme: dark)", color: "#131714" },
+  ],
 };
 
 const themeScript = `
@@ -27,6 +38,7 @@ export default function RootLayout({
     <html lang="tr" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <ReleaseNotesModal />
         {children}
       </body>
     </html>

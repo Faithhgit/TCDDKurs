@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { signInWithEmail } from "@/lib/auth";
 
+const RELEASE_VERSION = "2026.03.mvp.1";
+const RELEASE_TRIGGER_KEY = "release_notes_trigger";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -30,6 +33,7 @@ export default function LoginPage() {
       return;
     }
 
+    sessionStorage.setItem(RELEASE_TRIGGER_KEY, RELEASE_VERSION);
     router.push("/dashboard");
   }
 
