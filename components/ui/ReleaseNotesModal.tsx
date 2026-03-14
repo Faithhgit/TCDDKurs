@@ -3,19 +3,15 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const RELEASE_VERSION = "1.1.0";
+const RELEASE_VERSION = "1.1.1";
 const RELEASE_TRIGGER_KEY = "release_notes_trigger";
 const RELEASE_DISMISSED_KEY = "release_notes_dismissed_version";
 
 const updates = [
-  "Bazı hatalar giderildi.",
-  "Hata bildir bölümü eklendi.",
-  "Mobil görünümde çeşitli taşma ve yerleşim sorunları düzeltildi.",
-  "Soru çöz ekranı sadeleştirildi ve kullanım kolaylaştırıldı.",
-  "Profil ve genel arayüz metinleri Türkçeleştirildi.",
-  "Kayıt ekranına kullanım koşulları ve sorumluluk beyanı eklendi.",
-  "Yükleme ekranları daha düzenli hale getirildi.",
-  "Genel tema ve görsel kalite iyileştirildi.",
+  "Güvenlik güncellemeleri: admin işlemleri server route katmanına taşındı, hata bildirimine temel rate limit eklendi ve kritik yönetim akışları sıkılaştırıldı.",
+  "Görselli soru ekleme: localde çalışan görsel ekleme desteği eklendi, soru kartında görsel gösterimi açıldı.",
+  "Genel düzenlemeler: mobil taşmalar, durum etiketleri, yükleme ekranları, tema ve arayüz dili iyileştirildi.",
+  "Hata bildir bölümü ve admin takip akışı genişletildi.",
 ];
 
 function shouldCheckPath(pathname: string) {

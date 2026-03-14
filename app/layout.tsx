@@ -42,7 +42,7 @@ export default function RootLayout({
         <div className="app-shell">
           <div className="app-content">{children}</div>
           <footer className="app-footer">
-            <p>© 2026 Fatih Çetinkaya. Tüm hakları saklıdır. Sürüm 1.1.0</p>
+            <p>© 2026 Fatih Çetinkaya. Tüm hakları saklıdır. Sürüm 1.1.1</p>
           </footer>
         </div>
       </body>

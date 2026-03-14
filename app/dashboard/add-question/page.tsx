@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -12,6 +13,11 @@ import {
 } from "@/lib/questions";
 import { normalizeQuestionText } from "@/utils/normalize";
 import { getUserProfile } from "@/lib/auth";
+import {
+  fileToDataUrl,
+  removeLocalQuestionImage,
+  saveLocalQuestionImage,
+} from "@/lib/localQuestionImages";
 
 type SimilarQuestion = {
   id: number;
@@ -19,6 +25,13 @@ type SimilarQuestion = {
   status: string;
   created_by_name?: string;
 };
+
+function getStatusLabel(status: string) {
+  if (status === "approved") return "Onaylandı";
+  if (status === "rejected") return "Reddedildi";
+  if (status === "pending") return "Beklemede";
+  return status;
+}
 
 export default function AddQuestionPage() {
   const [topics, setTopics] = useState<TopicRow[]>([]);
@@ -39,6 +52,7 @@ export default function AddQuestionPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [similarQuestions, setSimilarQuestions] = useState<SimilarQuestion[]>([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
+  const [imagePreview, setImagePreview] = useState("");
 
   const normalizedQuestion = useMemo(() => normalizeQuestionText(question), [question]);
 
@@ -156,10 +170,16 @@ export default function AddQuestionPage() {
       return;
     }
 
+    if (imagePreview) {
+      saveLocalQuestionImage(normalizedQuestion, imagePreview);
+    } else {
+      removeLocalQuestionImage(normalizedQuestion);
+    }
+
     setSuccess(
       isAdmin
         ? "Soru kaydedildi ve doğrudan yayına alındı."
-        : "Soru kaydedildi. Admin onayından sonra yayına alınacak."
+        : "Soru kaydedildi. Admin onayından sonra yayına alınacak. Görsel yalnızca bu cihazda tutulur."
     );
     setQuestion("");
     setOptionA("");
@@ -168,7 +188,22 @@ export default function AddQuestionPage() {
     setOptionD("");
     setCorrectOption("");
     setExplanation("");
+    setImagePreview("");
     setSimilarQuestions([]);
+  }
+
+  async function handleImageChange(file: File | null) {
+    if (!file) {
+      setImagePreview("");
+      return;
+    }
+
+    try {
+      const nextImage = await fileToDataUrl(file);
+      setImagePreview(nextImage);
+    } catch (fileError) {
+      setError(fileError instanceof Error ? fileError.message : "Görsel eklenemedi.");
+    }
   }
 
   return (
@@ -286,6 +321,34 @@ export default function AddQuestionPage() {
                 />
               </div>
 
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <label className="mb-2 block text-sm font-medium text-[var(--foreground)]">
+                  Görsel
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => void handleImageChange(e.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-[var(--foreground-muted)]"
+                />
+                <p className="mt-2 text-xs leading-5 text-[var(--foreground-muted)]">
+                  Bu sürümde görsel sadece localde tutulur. Aynı cihaz ve tarayıcı dışında görünmez.
+                  En fazla 500 KB önerilir.
+                </p>
+                {imagePreview && (
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+                    <Image
+                      src={imagePreview}
+                      alt="Soru görsel önizlemesi"
+                      width={1200}
+                      height={720}
+                      className="max-h-56 w-full object-contain"
+                      unoptimized
+                    />
+                  </div>
+                )}
+              </div>
+
               {similarQuestions.length > 0 && (
                 <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
                   <p className="font-semibold">Buna benzeyen sorular olabilir.</p>
@@ -294,7 +357,7 @@ export default function AddQuestionPage() {
                       <li key={item.id} className="rounded-xl bg-white/70 px-3 py-2 dark:bg-black/10">
                         <p>{item.question_text}</p>
                         <p className="mt-1 text-xs opacity-80">
-                          Durum: {item.status}
+                          Durum: {getStatusLabel(item.status)}
                           {item.created_by_name ? ` • Hazırlayan: ${item.created_by_name}` : ""}
                         </p>
                       </li>

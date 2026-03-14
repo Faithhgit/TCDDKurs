@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fetchQuestionsByTopic, fetchTopics, type QuestionRow, type TopicRow } from "@/lib/questions";
+import { getLocalQuestionImage } from "@/lib/localQuestionImages";
 
 type TopicFilterValue = "all" | number;
 
@@ -46,6 +48,13 @@ export default function SolvePage() {
   }, [selectedTopicId]);
 
   const currentQuestion = useMemo(() => questions[currentIndex] ?? null, [questions, currentIndex]);
+  const questionImage = useMemo(() => {
+    if (!currentQuestion) {
+      return null;
+    }
+
+    return getLocalQuestionImage(currentQuestion.normalized_question_text);
+  }, [currentQuestion]);
 
   function resetAnswerState() {
     setChoice("");
@@ -184,6 +193,18 @@ export default function SolvePage() {
               </div>
 
               <div className="overflow-hidden rounded-[34px] border border-[color:color-mix(in_srgb,var(--primary)_28%,var(--border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_92%,white),color-mix(in_srgb,var(--surface-strong)_72%,white))] px-6 py-8 shadow-[var(--shadow-soft)] sm:px-7 sm:py-9">
+                {questionImage && (
+                  <div className="mb-5 overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)]">
+                    <Image
+                      src={questionImage}
+                      alt="Soru görseli"
+                      width={1200}
+                      height={900}
+                      className="max-h-[18rem] w-full object-contain"
+                      unoptimized
+                    />
+                  </div>
+                )}
                 <h2 className="break-words text-2xl font-semibold leading-9 text-[var(--foreground)] sm:text-[2rem] sm:leading-10 [overflow-wrap:anywhere]">
                   {currentQuestion.question_text}
                 </h2>

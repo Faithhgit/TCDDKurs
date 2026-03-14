@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { signInWithEmail } from "@/lib/auth";
 
-const RELEASE_VERSION = "1.1.0";
+const RELEASE_VERSION = "1.1.1";
 const RELEASE_TRIGGER_KEY = "release_notes_trigger";
 
 export default function LoginPage() {

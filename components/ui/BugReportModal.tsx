@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { createBugReport } from "@/lib/bugReports";
+import { authorizedFetch } from "@/lib/clientApi";
 
 type BugReportModalProps = {
   open: boolean;
@@ -36,33 +36,22 @@ export default function BugReportModal({ open, onClose }: BugReportModalProps) {
     setSaving(true);
 
     const { data: authData } = await supabase.auth.getUser();
-    const user = authData.user;
-
-    if (!user) {
+    if (!authData.user) {
       setSaving(false);
       setError("Önce giriş yapmanız gerekiyor.");
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("users")
-      .select("name")
-      .eq("id", user.id)
-      .single();
-
-    const createdByName =
-      profile?.name || user.user_metadata?.name || user.email || "Kullanıcı";
-
-    const { error: insertError } = await createBugReport({
-      message,
-      created_by_user_id: user.id,
-      created_by_name: createdByName,
+    const response = await authorizedFetch("/api/bug-reports", {
+      method: "POST",
+      body: JSON.stringify({ message }),
     });
 
     setSaving(false);
 
-    if (insertError) {
-      setError(insertError.message || "Hata bildirimi gönderilemedi.");
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      setError(result?.error || "Hata bildirimi gönderilemedi.");
       return;
     }
 
