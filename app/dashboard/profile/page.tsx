@@ -1,11 +1,11 @@
 "use client";
 
-import AppNavbar from "@/components/ui/AppNavbar";
 import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
-import { useEffect, useState } from "react";
+import AppNavbar from "@/components/ui/AppNavbar";
 import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
-import { useRouter } from "next/navigation";
 import { fetchQuestionsByUser } from "@/lib/questions";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type QuestionStats = {
   total: number;
@@ -77,8 +77,8 @@ export default function ProfilePage() {
     return (
       <AppLoadingScreen
         eyebrow="Profil"
-        title="Profil bilgilerin hazırlanıyor"
-        description="Hesabın ve soru özetin getiriliyor."
+        title="Profilin geliyor"
+        description="Kısa bir toparlanma, sonra her şey önünde."
       />
     );
   }
@@ -92,7 +92,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Profil</p>
-                <h1 className="text-2xl font-semibold text-[var(--foreground)]">Hesap Bilgileri</h1>
+                <h1 className="text-2xl font-semibold text-[var(--foreground)]">Senin Alanın</h1>
               </div>
               <button
                 onClick={handleSignOut}
@@ -105,7 +105,7 @@ export default function ProfilePage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
-                  Ad Soyad
+                  İsim
                 </p>
                 <p className="mt-2 font-medium text-[var(--foreground)]">{name}</p>
               </div>
@@ -128,10 +128,10 @@ export default function ProfilePage() {
 
           <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
             <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">
-              Sorduğun Sorular
+              Senden Gelenler
             </p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
-              Toplam {stats.total} soru ekledin
+              Şu ana kadar toplam {stats.total} soru eklemişsin
             </h2>
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -143,7 +143,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/30">
                 <p className="text-[11px] font-medium text-amber-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-amber-200">
-                  Beklemede
+                  Bekleyen
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-amber-900 dark:text-amber-100">
                   {stats.pending}
@@ -151,7 +151,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/30">
                 <p className="text-[11px] font-medium text-emerald-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-emerald-200">
-                  Onaylandı
+                  Onaylanan
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">
                   {stats.approved}
@@ -159,7 +159,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/40 dark:bg-rose-950/30">
                 <p className="text-[11px] font-medium text-rose-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-rose-200">
-                  Reddedildi
+                  Reddedilen
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-rose-900 dark:text-rose-100">
                   {stats.rejected}

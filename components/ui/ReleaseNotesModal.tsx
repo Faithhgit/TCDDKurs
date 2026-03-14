@@ -8,10 +8,10 @@ const RELEASE_TRIGGER_KEY = "release_notes_trigger";
 const RELEASE_DISMISSED_KEY = "release_notes_dismissed_version";
 
 const updates = [
-  "Güvenlik güncellemeleri: admin işlemleri server route katmanına taşındı, hata bildirimine temel rate limit eklendi ve kritik yönetim akışları sıkılaştırıldı.",
-  "Görselli soru ekleme: localde çalışan görsel ekleme desteği eklendi, soru kartında görsel gösterimi açıldı.",
-  "Genel düzenlemeler: mobil taşmalar, durum etiketleri, yükleme ekranları, tema ve arayüz dili iyileştirildi.",
-  "Hata bildir bölümü ve admin takip akışı genişletildi.",
+  "Güvenlik tarafında biraz toparlandık. Admin işlemlerinin önemli kısmı artık daha kontrollü ilerliyor.",
+  "Sorulara localde görsel ekleme açıldı. Şimdilik aynı cihazda görünüyor, yine de iş görüyor.",
+  "Genel görünüm, yazılar ve bazı sıkıcı detaylar elden geçti. Uygulama biraz daha temiz ve rahat kullanılır hale geldi.",
+  "Hata bildir bölümü genişletildi. Bir şey saçmalarsa bize daha hızlı ulaşabiliyorsun.",
 ];
 
 function shouldCheckPath(pathname: string) {
@@ -60,13 +60,12 @@ export default function ReleaseNotesModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
       <div className="w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
-        <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Güncelleme Notu</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Küçük Not</p>
         <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
-          Sürüm {RELEASE_VERSION} ile neler değişti?
+          1.1.1 sürümünde neler değişti?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-          Uygulama daha düzenli, daha mobil uyumlu ve daha anlaşılır hale getirildi. Öne çıkan
-          değişiklikler aşağıda:
+          Uygulama biraz daha toparlandı. En görünür değişiklikleri şuraya bıraktık:
         </p>
 
         <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
@@ -88,14 +87,13 @@ export default function ReleaseNotesModal() {
             className="mt-1 h-4 w-4 rounded border-[var(--border)]"
           />
           <span className="text-sm leading-6 text-[var(--foreground)]">
-            Bir sonraki güncelleme notuna kadar tekrar gösterme
+            Bir sonraki sürüm çıkana kadar bunu bir daha gösterme
           </span>
         </label>
 
         <div className="mt-4 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)]/70 p-4">
           <p className="text-xs leading-5 text-[var(--foreground-muted)]">
-            Not: Bu sürüm bir test sürümüdür. Gördüğünüz hata ve aksaklıkları menüdeki hata bildir
-            alanından iletmeniz beklenir.
+            Not: Bu hâlâ test sürümü. Garip bir şey görürsen menüdeki hata bildir kısmına bırak.
           </p>
         </div>
 
@@ -105,7 +103,7 @@ export default function ReleaseNotesModal() {
             onClick={handleClose}
             className="min-h-11 rounded-2xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
           >
-            Tamam
+            Kapat
           </button>
         </div>
       </div>

@@ -1,9 +1,9 @@
 "use client";
 
+import { signInWithEmail } from "@/lib/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { signInWithEmail } from "@/lib/auth";
 
 const RELEASE_VERSION = "1.1.1";
 const RELEASE_TRIGGER_KEY = "release_notes_trigger";
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError("");
 
     if (!email || !password) {
-      setError("E-posta ve şifre girin.");
+      setError("E-posta ve şifreyi boş bırakma.");
       return;
     }
 
@@ -29,7 +29,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (error) {
-      setError(error.message || "Giriş sırasında bir hata oldu.");
+      setError(error.message || "Girişte ufak bir terslik oldu.");
       return;
     }
 
@@ -40,9 +40,9 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-6 sm:px-8 sm:py-10">
       <div className="mx-auto w-full max-w-md rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Giriş Yap</h1>
+        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Tekrar hoş geldin</h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-          E-posta ve şifrenle hesabına giriş yap.
+          Mailini ve şifreni gir, kaldığın yerden devam et.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -79,12 +79,12 @@ export default function LoginPage() {
             disabled={loading}
             className="min-h-12 w-full rounded-2xl bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
           >
-            {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+            {loading ? "Giriliyor..." : "Giriş Yap"}
           </button>
         </form>
 
         <p className="mt-4 text-sm text-[var(--foreground-muted)]">
-          Hesabın yok mu?{" "}
+          Henüz hesabın yok mu?{" "}
           <Link href="/auth/register" className="font-semibold text-[var(--primary)]">
             Kayıt Ol
           </Link>

@@ -7,9 +7,9 @@ type AppLoadingScreenProps = {
 };
 
 export default function AppLoadingScreen({
-  eyebrow = "Yükleniyor",
-  title = "Sayfa hazırlanıyor",
-  description = "İçerikler senin için getiriliyor.",
+  eyebrow = "Bir saniye",
+  title = "Ekran hazırlanıyor",
+  description = "Bir şeyler yerli yerine oturuyor, az kaldı.",
 }: AppLoadingScreenProps) {
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-6 sm:px-8 sm:py-10">

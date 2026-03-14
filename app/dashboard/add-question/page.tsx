@@ -1,9 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import AppNavbar from "@/components/ui/AppNavbar";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+
+import AppNavbar from "@/components/ui/AppNavbar";
+import { getUserProfile } from "@/lib/auth";
+import { getAccessToken } from "@/lib/clientApi";
+import { fileToDataUrl } from "@/lib/localQuestionImages";
 import {
   fetchTopics,
   findDuplicateQuestion,
@@ -11,13 +14,8 @@ import {
   insertQuestion,
   type TopicRow,
 } from "@/lib/questions";
+import { supabase } from "@/lib/supabaseClient";
 import { normalizeQuestionText } from "@/utils/normalize";
-import { getUserProfile } from "@/lib/auth";
-import {
-  fileToDataUrl,
-  removeLocalQuestionImage,
-  saveLocalQuestionImage,
-} from "@/lib/localQuestionImages";
 
 type SimilarQuestion = {
   id: number;
@@ -31,6 +29,32 @@ function getStatusLabel(status: string) {
   if (status === "rejected") return "Reddedildi";
   if (status === "pending") return "Beklemede";
   return status;
+}
+
+async function uploadQuestionImage(normalizedQuestionText: string, file: File) {
+  const token = await getAccessToken();
+
+  if (!token) {
+    throw new Error("Oturum bulunamadı.");
+  }
+
+  const formData = new FormData();
+  formData.append("normalizedQuestionText", normalizedQuestionText);
+  formData.append("file", file);
+
+  const response = await fetch("/api/question-images", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const result = (await response.json().catch(() => null)) as { error?: string } | null;
+
+  if (!response.ok) {
+    throw new Error(result?.error || "Görsel yüklenemedi.");
+  }
 }
 
 export default function AddQuestionPage() {
@@ -53,6 +77,7 @@ export default function AddQuestionPage() {
   const [similarQuestions, setSimilarQuestions] = useState<SimilarQuestion[]>([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const normalizedQuestion = useMemo(() => normalizeQuestionText(question), [question]);
 
@@ -61,6 +86,7 @@ export default function AddQuestionPage() {
 
     async function load() {
       const { data } = await supabase.auth.getUser();
+
       if (!data.user) {
         window.location.href = "/auth/login";
         return;
@@ -129,12 +155,12 @@ export default function AddQuestionPage() {
       !optionD.trim() ||
       !correctOption
     ) {
-      setError("Lütfen tüm zorunlu alanları doldurun ve doğru seçeneği işaretleyin.");
+      setError("Boş yer kalmış. Hepsini doldurup doğru şıkkı seç.");
       return;
     }
 
     if (normalizedQuestion.length < 10) {
-      setError("Soru metni çok kısa. En az 10 karakter girin.");
+      setError("Soru biraz fazla kısa kaldı. Biraz daha aç.");
       return;
     }
 
@@ -143,12 +169,12 @@ export default function AddQuestionPage() {
     const dupe = await findDuplicateQuestion(normalizedQuestion);
     if (dupe.data && dupe.data.length > 0) {
       setLoading(false);
-      setError("Bu soru zaten sistemde mevcut. Lütfen farklı bir soru girin.");
+      setError("Bu soru sistemde zaten var gibi görünüyor. Başka bir soru deneyelim.");
       return;
     }
 
     const finalName = name || "Öğrenci";
-    const { error } = await insertQuestion({
+    const { error: insertError } = await insertQuestion({
       topic_id: topicId,
       question_text: question.trim(),
       option_a: optionA.trim(),
@@ -163,24 +189,33 @@ export default function AddQuestionPage() {
       status: isAdmin ? "approved" : "pending",
     });
 
-    setLoading(false);
-
-    if (error) {
-      setError(error.message || "Soru eklenirken hata oldu.");
+    if (insertError) {
+      setLoading(false);
+      setError(insertError.message || "Soru eklerken ufak bir terslik oldu.");
       return;
     }
 
-    if (imagePreview) {
-      saveLocalQuestionImage(normalizedQuestion, imagePreview);
-    } else {
-      removeLocalQuestionImage(normalizedQuestion);
+    let imageMessage = "";
+
+    if (imageFile) {
+      try {
+        await uploadQuestionImage(normalizedQuestion, imageFile);
+        imageMessage = " Görsel de eklendi.";
+      } catch (imageError) {
+        imageMessage =
+          imageError instanceof Error
+            ? ` Görsel yüklenemedi: ${imageError.message}`
+            : " Görsel yüklenemedi.";
+      }
     }
 
+    setLoading(false);
     setSuccess(
       isAdmin
-        ? "Soru kaydedildi ve doğrudan yayına alındı."
-        : "Soru kaydedildi. Admin onayından sonra yayına alınacak. Görsel yalnızca bu cihazda tutulur."
+        ? `Soru kaydedildi, direkt yayına girdi.${imageMessage}`
+        : `Soru kaydedildi. Admin bakınca yayına alınır.${imageMessage}`
     );
+
     setQuestion("");
     setOptionA("");
     setOptionB("");
@@ -189,20 +224,27 @@ export default function AddQuestionPage() {
     setCorrectOption("");
     setExplanation("");
     setImagePreview("");
+    setImageFile(null);
     setSimilarQuestions([]);
   }
 
   async function handleImageChange(file: File | null) {
+    setError("");
+
     if (!file) {
       setImagePreview("");
+      setImageFile(null);
       return;
     }
 
     try {
       const nextImage = await fileToDataUrl(file);
       setImagePreview(nextImage);
+      setImageFile(file);
     } catch (fileError) {
-      setError(fileError instanceof Error ? fileError.message : "Görsel eklenemedi.");
+      setImagePreview("");
+      setImageFile(null);
+      setError(fileError instanceof Error ? fileError.message : "Görsel eklerken bir şey ters gitti.");
     }
   }
 
@@ -213,21 +255,19 @@ export default function AddQuestionPage() {
         <div className="mx-auto w-full max-w-3xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Soru Ekle</p>
-            <h1 className="text-xl font-semibold text-[var(--foreground)]">Yeni Soru Gönder</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)]">Yeni Soru Bırak</h1>
             <p className="text-sm text-[var(--foreground-muted)]">
-              {isAdmin
-                ? "Admin soruları doğrudan onaylı olarak ekleyebilir."
-                : "Sorular önce beklemeye alınır, sonra admin onaylar."}
+              {isAdmin ? "Adminsen soru direkt yayına girebilir." : "Soruyu bırak, admin bakınca yayına alır."}
             </p>
           </div>
 
           {pageLoading ? (
             <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
-              Form hazırlanıyor...
+              Form açılıyor...
             </div>
           ) : !topics.length ? (
             <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-              Henüz aktif konu bulunmuyor. Önce admin panelinden konu eklenmeli.
+              Şu an aktif konu yok. Önce konu eklemek gerekiyor.
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -252,11 +292,11 @@ export default function AddQuestionPage() {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   className="min-h-32 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
-                  placeholder="Soruyu açık ve anlaşılır şekilde yazın."
+                  placeholder="Soruyu net şekilde yaz."
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <p className="text-xs text-[var(--foreground-muted)]">
-                    Metin normalize edilerek tekrar soru kontrolü yapılır.
+                    Aynı sorunun tekrar düşmemesi için metin kontrol ediliyor.
                   </p>
                   <button
                     type="button"
@@ -264,36 +304,16 @@ export default function AddQuestionPage() {
                     disabled={checkingSimilar || normalizedQuestion.length < 12}
                     className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold disabled:opacity-50"
                   >
-                    {checkingSimilar ? "Kontrol ediliyor..." : "Benzer Soruları Kontrol Et"}
+                    {checkingSimilar ? "Bakılıyor..." : "Benzer Sorulara Bak"}
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <input
-                  value={optionA}
-                  onChange={(e) => setOptionA(e.target.value)}
-                  placeholder="A şıkkı"
-                  className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
-                />
-                <input
-                  value={optionB}
-                  onChange={(e) => setOptionB(e.target.value)}
-                  placeholder="B şıkkı"
-                  className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
-                />
-                <input
-                  value={optionC}
-                  onChange={(e) => setOptionC(e.target.value)}
-                  placeholder="C şıkkı"
-                  className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
-                />
-                <input
-                  value={optionD}
-                  onChange={(e) => setOptionD(e.target.value)}
-                  placeholder="D şıkkı"
-                  className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
-                />
+                <input value={optionA} onChange={(e) => setOptionA(e.target.value)} placeholder="A şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
+                <input value={optionB} onChange={(e) => setOptionB(e.target.value)} placeholder="B şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
+                <input value={optionC} onChange={(e) => setOptionC(e.target.value)} placeholder="C şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
+                <input value={optionD} onChange={(e) => setOptionD(e.target.value)} placeholder="D şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
               </div>
 
               <div>
@@ -317,26 +337,50 @@ export default function AddQuestionPage() {
                   value={explanation}
                   onChange={(e) => setExplanation(e.target.value)}
                   className="min-h-24 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
-                  placeholder="İstersen çözüm mantığını burada açıklayabilirsin."
+                  placeholder="İstersen kısa bir açıklama bırak."
                 />
               </div>
 
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-                <label className="mb-2 block text-sm font-medium text-[var(--foreground)]">
-                  Görsel
+              <div className="rounded-[26px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_96%,white),color-mix(in_srgb,var(--surface-muted)_90%,white))] p-4 shadow-[var(--shadow-soft)]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Görsel Ekle</label>
+                    <p className="text-xs leading-5 text-[var(--foreground-muted)]">
+                      İstersen soruya tek bir görsel ekleyebilirsin. Soru kaydolunca diğer kullanıcılar da görür.
+                    </p>
+                  </div>
+                  {imagePreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImagePreview("");
+                        setImageFile(null);
+                      }}
+                      className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground-muted)]"
+                    >
+                      Görseli Kaldır
+                    </button>
+                  )}
+                </div>
+
+                <label className="mt-3 flex min-h-28 cursor-pointer items-center justify-center rounded-[22px] border border-dashed border-[var(--border-strong)] bg-[var(--surface)] px-4 py-5 text-center transition hover:bg-[var(--surface-muted)]">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => void handleImageChange(e.target.files?.[0] ?? null)}
+                    className="hidden"
+                  />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    {imagePreview ? "Başka bir görsel seç" : "Görsel seçmek için dokun"}
+                  </span>
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => void handleImageChange(e.target.files?.[0] ?? null)}
-                  className="block w-full text-sm text-[var(--foreground-muted)]"
-                />
+
                 <p className="mt-2 text-xs leading-5 text-[var(--foreground-muted)]">
-                  Bu sürümde görsel sadece localde tutulur. Aynı cihaz ve tarayıcı dışında görünmez.
-                  En fazla 500 KB önerilir.
+                  Çok büyük dosya koyma. 2 MB altı rahat çalışır.
                 </p>
+
                 {imagePreview && (
-                  <div className="mt-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+                  <div className="mt-4 overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-soft)]">
                     <Image
                       src={imagePreview}
                       alt="Soru görsel önizlemesi"
@@ -371,6 +415,7 @@ export default function AddQuestionPage() {
                   {error}
                 </div>
               )}
+
               {success && (
                 <div className="rounded-2xl bg-emerald-50 px-3 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                   {success}

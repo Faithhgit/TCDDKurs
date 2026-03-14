@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import AppNavbar from "@/components/ui/AppNavbar";
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { fetchQuestionsByTopic, fetchTopics, type QuestionRow, type TopicRow } from "@/lib/questions";
+import { useEffect, useMemo, useState } from "react";
+
+import AppNavbar from "@/components/ui/AppNavbar";
 import { getLocalQuestionImage } from "@/lib/localQuestionImages";
+import { getQuestionImagePublicUrl } from "@/lib/questionImages";
+import { fetchQuestionsByTopic, fetchTopics, type QuestionRow, type TopicRow } from "@/lib/questions";
 
 type TopicFilterValue = "all" | number;
 
@@ -18,16 +20,17 @@ export default function SolvePage() {
   const [feedback, setFeedback] = useState("");
   const [showExplanation, setShowExplanation] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [brokenSharedImages, setBrokenSharedImages] = useState<string[]>([]);
 
   useEffect(() => {
-    async function loadData() {
+    async function loadTopics() {
       setLoading(true);
       const topicsRes = await fetchTopics();
       setTopics((topicsRes.data ?? []) as TopicRow[]);
       setLoading(false);
     }
 
-    void loadData();
+    void loadTopics();
   }, []);
 
   useEffect(() => {
@@ -48,13 +51,17 @@ export default function SolvePage() {
   }, [selectedTopicId]);
 
   const currentQuestion = useMemo(() => questions[currentIndex] ?? null, [questions, currentIndex]);
-  const questionImage = useMemo(() => {
-    if (!currentQuestion) {
-      return null;
-    }
-
+  const localQuestionImage = useMemo(() => {
+    if (!currentQuestion) return null;
     return getLocalQuestionImage(currentQuestion.normalized_question_text);
   }, [currentQuestion]);
+  const sharedQuestionImage = useMemo(() => {
+    if (!currentQuestion) return null;
+    return getQuestionImagePublicUrl(currentQuestion.normalized_question_text);
+  }, [currentQuestion]);
+  const hideSharedImage = currentQuestion
+    ? brokenSharedImages.includes(currentQuestion.normalized_question_text)
+    : false;
 
   function resetAnswerState() {
     setChoice("");
@@ -67,9 +74,7 @@ export default function SolvePage() {
 
     setChoice(selected);
     const isCorrect = selected === currentQuestion.correct_option;
-    setFeedback(
-      isCorrect ? "Doğru cevap." : `Yanlış cevap. Doğru seçenek: ${currentQuestion.correct_option}`
-    );
+    setFeedback(isCorrect ? "Doğru, devam." : `Olmadı. Doğru seçenek: ${currentQuestion.correct_option}`);
     setShowExplanation(true);
   }
 
@@ -98,9 +103,9 @@ export default function SolvePage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Soru Çöz</p>
-              <h1 className="text-2xl font-semibold text-[var(--foreground)]">Konu Bazlı Soru Çöz</h1>
+              <h1 className="text-2xl font-semibold text-[var(--foreground)]">Bir Konu Seç, Başlayalım</h1>
               <p className="text-sm text-[var(--foreground-muted)]">
-                Onaylı soruları çöz, sonucu anında gör.
+                Soruyu çöz, sonucu anında gör, istersen sıradakine geç.
               </p>
             </div>
             <Link
@@ -112,22 +117,20 @@ export default function SolvePage() {
           </div>
 
           <div className="mt-5">
-            <div>
-              <label className="block text-sm font-medium text-[var(--foreground)]">Konu Seç</label>
-              <select
-                value={selectedTopicId}
-                onChange={(e) => setSelectedTopicId(e.target.value === "all" ? "all" : Number(e.target.value))}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 shadow-[var(--shadow-soft)]"
-                disabled={!topics.length}
-              >
-                <option value="all">Tüm Konular</option>
-                {topics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>
-                    {topic.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <label className="block text-sm font-medium text-[var(--foreground)]">Konu Seç</label>
+            <select
+              value={selectedTopicId}
+              onChange={(e) => setSelectedTopicId(e.target.value === "all" ? "all" : Number(e.target.value))}
+              className="mt-1 min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 shadow-[var(--shadow-soft)]"
+              disabled={!topics.length}
+            >
+              <option value="all">Tüm Konular</option>
+              {topics.map((topic) => (
+                <option key={topic.id} value={topic.id}>
+                  {topic.title}
+                </option>
+              ))}
+            </select>
           </div>
 
           {loading ? (
@@ -153,11 +156,11 @@ export default function SolvePage() {
             </div>
           ) : !topics.length ? (
             <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
-              Henüz aktif konu bulunmuyor. Önce admin panelinden konu eklenmeli.
+              Daha ortada aktif konu yok. Önce konu eklemek gerekiyor.
             </div>
           ) : !currentQuestion ? (
             <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
-              {selectedTopicLabel} için henüz onaylı soru yok.
+              {selectedTopicLabel} tarafı şimdilik boş görünüyor.
             </div>
           ) : (
             <div className="mt-6 space-y-4">
@@ -193,14 +196,22 @@ export default function SolvePage() {
               </div>
 
               <div className="overflow-hidden rounded-[34px] border border-[color:color-mix(in_srgb,var(--primary)_28%,var(--border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_92%,white),color-mix(in_srgb,var(--surface-strong)_72%,white))] px-6 py-8 shadow-[var(--shadow-soft)] sm:px-7 sm:py-9">
-                {questionImage && (
+                {(localQuestionImage || (!hideSharedImage && sharedQuestionImage)) && (
                   <div className="mb-5 overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)]">
                     <Image
-                      src={questionImage}
+                      src={localQuestionImage || sharedQuestionImage || ""}
                       alt="Soru görseli"
                       width={1200}
                       height={900}
                       className="max-h-[18rem] w-full object-contain"
+                      onError={() => {
+                        if (!currentQuestion || localQuestionImage) return;
+                        setBrokenSharedImages((prev) =>
+                          prev.includes(currentQuestion.normalized_question_text)
+                            ? prev
+                            : [...prev, currentQuestion.normalized_question_text]
+                        );
+                      }}
                       unoptimized
                     />
                   </div>
@@ -224,11 +235,14 @@ export default function SolvePage() {
                     "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_97%,white)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]";
 
                   if (isCorrect) {
-                    className = "border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200";
+                    className =
+                      "border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200";
                   } else if (isWrongChoice) {
-                    className = "border-rose-500 bg-rose-50 text-rose-900 dark:bg-rose-950/30 dark:text-rose-200";
+                    className =
+                      "border-rose-500 bg-rose-50 text-rose-900 dark:bg-rose-950/30 dark:text-rose-200";
                   } else if (isSelected) {
-                    className = "border-[var(--primary)] bg-[color:color-mix(in_srgb,var(--primary)_10%,var(--surface))] text-[var(--foreground)]";
+                    className =
+                      "border-[var(--primary)] bg-[color:color-mix(in_srgb,var(--primary)_10%,var(--surface))] text-[var(--foreground)]";
                   }
 
                   return (
@@ -264,9 +278,9 @@ export default function SolvePage() {
 
               {showExplanation && (
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--foreground-muted)] shadow-[var(--shadow-soft)]">
-                  <p className="font-semibold text-[var(--foreground)]">Açıklama</p>
+                  <p className="font-semibold text-[var(--foreground)]">Kısa Açıklama</p>
                   <p className="mt-1 break-words [overflow-wrap:anywhere]">
-                    {currentQuestion.explanation?.trim() || "Bu soru için henüz açıklama eklenmemiş."}
+                    {currentQuestion.explanation?.trim() || "Bu soru için henüz ekstra not bırakılmamış."}
                   </p>
                 </div>
               )}
