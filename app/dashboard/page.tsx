@@ -31,7 +31,7 @@ export default function DashboardPage() {
       setLoading(false);
     }
 
-    load();
+    void load();
   }, [router]);
 
   async function handleSignOut() {
@@ -60,7 +60,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={handleSignOut}
-              className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-2xl bg-[var(--foreground)] px-4 py-2 text-sm font-semibold text-[var(--surface)]"
             >
               Çıkış Yap
             </button>
@@ -69,26 +69,26 @@ export default function DashboardPage() {
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <Link
               href="/dashboard/solve"
-              className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-center text-sm font-semibold text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-200"
+              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
             >
               Soru Çöz
             </Link>
             <Link
               href="/dashboard/add-question"
-              className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center text-sm font-semibold text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200"
+              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
             >
               Soru Ekle
             </Link>
             <Link
               href="/dashboard/profile"
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-4 text-center text-sm font-semibold"
+              className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
             >
               Profil
             </Link>
             {isAdmin && (
               <Link
                 href="/dashboard/admin"
-                className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-center text-sm font-semibold text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-200"
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-4 text-center text-sm font-semibold"
               >
                 Admin
               </Link>

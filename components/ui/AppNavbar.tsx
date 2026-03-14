@@ -49,7 +49,7 @@ export default function AppNavbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_88%,transparent)] backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-[color:color-mix(in_srgb,var(--border)_92%,transparent)] bg-[color:color-mix(in_srgb,var(--surface)_82%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           {routes.map((route) => {
@@ -61,8 +61,8 @@ export default function AppNavbar() {
                 href={route.href}
                 className={`inline-flex min-h-10 items-center rounded-full px-4 text-xs font-semibold sm:text-sm ${
                   isActive
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                    : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
+                    ? "border border-[color:color-mix(in_srgb,var(--primary)_78%,black)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+                    : "border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] text-[var(--foreground)]"
                 }`}
               >
                 {route.label}
@@ -75,17 +75,19 @@ export default function AppNavbar() {
           <button
             type="button"
             onClick={() => setMenuOpen((current) => !current)}
-            className="inline-flex min-h-10 items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)]"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] text-lg font-semibold text-[var(--foreground)]"
+            aria-label="Ayarları aç"
+            title="Ayarlar"
           >
-            Menü
+            ⚙
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-12 w-56 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-lg">
+            <div className="absolute right-0 top-12 w-56 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-[0_24px_60px_rgba(31,37,32,0.18)]">
               <Link
                 href="/dashboard/profile"
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-xl px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
+                className="block rounded-2xl px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
               >
                 Profil
               </Link>
@@ -93,7 +95,7 @@ export default function AppNavbar() {
                 <Link
                   href="/dashboard/admin"
                   onClick={() => setMenuOpen(false)}
-                  className="block rounded-xl px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
+                  className="block rounded-2xl px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
                 >
                   Admin
                 </Link>

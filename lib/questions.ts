@@ -78,6 +78,15 @@ export async function fetchQuestionsForAdmin(status?: QuestionStatus) {
   return { data, error };
 }
 
+export async function fetchQuestionsByUser(userId: string) {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("id, status")
+    .eq("created_by_user_id", userId);
+
+  return { data, error };
+}
+
 export async function insertQuestion(question: {
   topic_id: number;
   question_text: string;

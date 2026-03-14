@@ -27,11 +27,11 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--foreground)]"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-base font-semibold text-[var(--foreground)]"
       aria-label="Temayı değiştir"
-      title="Temayı değiştir"
+      title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
     >
-      {theme === "dark" ? "Açık Tema" : "Koyu Tema"}
+      {theme === "dark" ? "☀" : "☾"}
     </button>
   );
 }

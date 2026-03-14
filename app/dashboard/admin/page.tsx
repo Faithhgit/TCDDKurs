@@ -20,6 +20,7 @@ import { getUserProfile } from "@/lib/auth";
 import { normalizeQuestionText } from "@/utils/normalize";
 
 type StatusFilter = "all" | QuestionStatus;
+type TopicFilter = "all" | number;
 
 const optionKeys = [
   { label: "A", key: "option_a" },
@@ -40,6 +41,12 @@ function getStatusBadgeClass(status: QuestionStatus) {
   return "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200";
 }
 
+function getStatusLabel(status: QuestionStatus) {
+  if (status === "approved") return "Onaylandı";
+  if (status === "rejected") return "Reddedildi";
+  return "Beklemede";
+}
+
 export default function AdminPage() {
   const [pending, setPending] = useState<QuestionRow[]>([]);
   const [allQuestions, setAllQuestions] = useState<QuestionRow[]>([]);
@@ -48,6 +55,8 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [unauthorized, setUnauthorized] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [topicFilter, setTopicFilter] = useState<TopicFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionRow | null>(null);
   const [message, setMessage] = useState("");
   const router = useRouter();
@@ -149,18 +158,25 @@ export default function AdminPage() {
     await refreshData();
   }
 
-  const filteredQuestions = useMemo(() => {
-    if (statusFilter === "all") {
-      return allQuestions;
-    }
-
-    return allQuestions.filter((question) => question.status === statusFilter);
-  }, [allQuestions, statusFilter]);
-
   const topicMap = useMemo(
     () => new Map(topics.map((topic) => [topic.id, topic.title])),
     [topics]
   );
+
+  const filteredQuestions = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase("tr-TR");
+
+    return allQuestions.filter((question) => {
+      const matchesStatus = statusFilter === "all" || question.status === statusFilter;
+      const matchesTopic = topicFilter === "all" || question.topic_id === topicFilter;
+      const matchesQuery =
+        !query ||
+        question.question_text.toLocaleLowerCase("tr-TR").includes(query) ||
+        question.created_by_name.toLocaleLowerCase("tr-TR").includes(query);
+
+      return matchesStatus && matchesTopic && matchesQuery;
+    });
+  }, [allQuestions, searchQuery, statusFilter, topicFilter]);
 
   if (loading) {
     return <div className="min-h-screen bg-[var(--background)] p-4">Yükleniyor...</div>;
@@ -288,15 +304,36 @@ export default function AdminPage() {
                 <h2 className="text-base font-semibold text-[var(--foreground)]">
                   Tüm Sorular ({filteredQuestions.length})
                 </h2>
+              </div>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Soru veya hazırlayan ara"
+                  className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm"
+                />
+                <select
+                  value={topicFilter}
+                  onChange={(e) => setTopicFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+                  className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm"
+                >
+                  <option value="all">Tüm konular</option>
+                  {topics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.title}
+                    </option>
+                  ))}
+                </select>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                   className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm"
                 >
                   <option value="all">Tüm durumlar</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="pending">Beklemede</option>
+                  <option value="approved">Onaylandı</option>
+                  <option value="rejected">Reddedildi</option>
                 </select>
               </div>
 
@@ -325,7 +362,7 @@ export default function AdminPage() {
                         <span
                           className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${getStatusBadgeClass(question.status)}`}
                         >
-                          {question.status}
+                          {getStatusLabel(question.status)}
                         </span>
                       </div>
                     </button>
@@ -341,7 +378,8 @@ export default function AdminPage() {
 
               {!selectedQuestion ? (
                 <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--foreground-muted)]">
-                  Soldaki listeden bir soru seçin. Burada düzenleme, durum değiştirme ve silme işlemlerini yapabilirsiniz.
+                  Soldaki listeden bir soru seçin. Burada düzenleme, durum değiştirme ve silme
+                  işlemlerini yapabilirsiniz.
                 </div>
               ) : (
                 <div className="mt-4 space-y-4">
@@ -363,7 +401,9 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Soru Metni</label>
+                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+                      Soru Metni
+                    </label>
                     <textarea
                       value={selectedQuestion.question_text}
                       onChange={(e) =>
@@ -393,7 +433,9 @@ export default function AdminPage() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Doğru Şık</label>
+                      <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+                        Doğru Şık
+                      </label>
                       <select
                         value={selectedQuestion.correct_option}
                         onChange={(e) =>
@@ -411,7 +453,9 @@ export default function AdminPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Durum</label>
+                      <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+                        Durum
+                      </label>
                       <select
                         value={selectedQuestion.status}
                         onChange={(e) =>
@@ -422,15 +466,17 @@ export default function AdminPage() {
                         }
                         className="min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
                       >
-                        <option value="pending">pending</option>
-                        <option value="approved">approved</option>
-                        <option value="rejected">rejected</option>
+                        <option value="pending">Beklemede</option>
+                        <option value="approved">Onaylandı</option>
+                        <option value="rejected">Reddedildi</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Hazırlayan</label>
+                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+                      Hazırlayan
+                    </label>
                     <input
                       value={selectedQuestion.created_by_name}
                       onChange={(e) =>
@@ -441,7 +487,9 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Açıklama</label>
+                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+                      Açıklama
+                    </label>
                     <textarea
                       value={selectedQuestion.explanation ?? ""}
                       onChange={(e) =>
