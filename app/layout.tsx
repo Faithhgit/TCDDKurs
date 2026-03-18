@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import ReleaseNotesModal from "@/components/ui/ReleaseNotesModal";
 import SessionGuard from "@/components/ui/SessionGuard";
 import { APP_VERSION } from "@/lib/appConfig";
 import "./globals.css";
+
+const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? "";
 
 export const metadata: Metadata = {
   title: "Soru Çözme Uygulaması",
@@ -40,12 +44,16 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
-        <meta name="google-adsense-account" content="ca-pub-1086260801913853" />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1086260801913853"
-          crossOrigin="anonymous"
-        />
+        {adsenseClientId ? (
+          <>
+            <meta name="google-adsense-account" content={adsenseClientId} />
+            <script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+              crossOrigin="anonymous"
+            />
+          </>
+        ) : null}
       </head>
       <body className="antialiased" suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
@@ -57,6 +65,8 @@ export default function RootLayout({
             <p>© 2026 Fatih Çetinkaya. Tüm hakları saklıdır. Sürüm {APP_VERSION}</p>
           </footer>
         </div>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -8,25 +8,26 @@ declare global {
   }
 }
 
-const ADSENSE_CLIENT_ID = "ca-pub-1086260801913853";
+const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? "";
 const ADSENSE_SLOT_ID = process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID ?? "";
 
 export default function AdsenseBanner() {
   useEffect(() => {
-    if (!ADSENSE_SLOT_ID) return;
+    if (!ADSENSE_CLIENT_ID || !ADSENSE_SLOT_ID) return;
 
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {}
   }, []);
 
-  if (!ADSENSE_SLOT_ID) {
+  if (!ADSENSE_CLIENT_ID || !ADSENSE_SLOT_ID) {
     return (
       <div className="rounded-[28px] border border-dashed border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface-muted))] px-5 py-5 shadow-[var(--shadow-soft)]">
         <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--primary)]">Sponsorlu Alan</p>
-        <p className="mt-2 text-sm font-medium text-[var(--foreground)]">AdSense scripti bağlandı.</p>
+        <p className="mt-2 text-sm font-medium text-[var(--foreground)]">AdSense hazır bekliyor.</p>
         <p className="mt-1 text-sm leading-6 text-[var(--foreground-muted)]">
-          Gerçek banner&apos;ın görünmesi için sadece `ad slot id` eksik.
+          Gerçek banner&apos;ın görünmesi için `NEXT_PUBLIC_ADSENSE_CLIENT_ID` ve
+          `NEXT_PUBLIC_ADSENSE_SLOT_ID` tanımlı olmalı.
         </p>
       </div>
     );
