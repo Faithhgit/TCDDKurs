@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
+import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { getLocalQuestionImage } from "@/lib/localQuestionImages";
 import { getQuestionImagePublicUrl } from "@/lib/questionImages";
@@ -69,7 +70,7 @@ function probeSharedQuestionImage(normalizedQuestionText: string) {
   });
 }
 
-export default function SolvePage() {
+function SolvePageContent() {
   const QUIZ_REVIEW_PAGE_SIZE = 20;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1056,5 +1057,21 @@ export default function SolvePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SolvePage() {
+  return (
+    <Suspense
+      fallback={
+        <AppLoadingScreen
+          eyebrow="Soru Çöz"
+          title="Soru ekranı hazırlanıyor"
+          description="Modlar ve sorular yerleşiyor, az kaldı."
+        />
+      }
+    >
+      <SolvePageContent />
+    </Suspense>
   );
 }
