@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireUser } from "@/lib/server/auth";
+import { checkRateLimit } from "@/lib/server/rateLimit";
+import { buildRateLimitKey } from "@/lib/server/request";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import { QUESTION_IMAGE_BUCKET, createQuestionImagePath } from "@/lib/questionImages";
+import { validateRequiredString } from "@/lib/server/validation";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 
 async function ensureBucket() {
   const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
@@ -33,19 +37,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
+  const limiter = checkRateLimit(buildRateLimitKey(request, "question-image", auth.user.id), 10, 10 * 60 * 1000);
+  if (!limiter.ok) {
+    return NextResponse.json(
+      { error: "Çok sık görsel yükleniyor. Biraz sonra tekrar deneyin." },
+      { status: 429 }
+    );
+  }
+
   const formData = await request.formData();
-  const normalizedQuestionText = String(formData.get("normalizedQuestionText") ?? "").trim();
+  const normalizedQuestionText = validateRequiredString(formData.get("normalizedQuestionText"), {
+    field: "Soru anahtarı",
+    min: 10,
+    max: 5000,
+  });
   const file = formData.get("file");
 
-  if (!normalizedQuestionText) {
-    return NextResponse.json({ error: "Soru anahtarı bulunamadı." }, { status: 400 });
+  if (!normalizedQuestionText.ok) {
+    return NextResponse.json({ error: normalizedQuestionText.error }, { status: 400 });
   }
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Görsel dosyası gelmedi." }, { status: 400 });
   }
 
-  if (!file.type.startsWith("image/")) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
     return NextResponse.json({ error: "Sadece görsel yükleyebilirsin." }, { status: 400 });
   }
 
@@ -58,7 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Görsel alanı hazırlanamadı." }, { status: 500 });
   }
 
-  const path = createQuestionImagePath(normalizedQuestionText);
+  const path = createQuestionImagePath(normalizedQuestionText.value);
   const bytes = await file.arrayBuffer();
 
   const { error } = await supabaseAdmin.storage

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireManager } from "@/lib/server/auth";
+import { writeAuditLog } from "@/lib/server/audit";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 
 export async function DELETE(
@@ -22,6 +23,18 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await writeAuditLog({
+    actor: {
+      id: auth.profile.id,
+      name: auth.profile.name ?? null,
+      role: auth.profile.role ?? null,
+    },
+    action: "bug_report_deleted",
+    target_type: "bug_report",
+    target_id: String(reportId),
+    summary: `Hata bildirimi silindi. id=${reportId}`,
+  });
 
   return NextResponse.json({ success: true });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/server/auth";
 import { checkRateLimit } from "@/lib/server/rateLimit";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
+import { isRecord, validateRequiredString } from "@/lib/server/validation";
 
 export async function POST(request: NextRequest) {
   const auth = await requireUser(request);
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const limiter = checkRateLimit(`bug-report:${auth.user.id}`, 5, 10 * 60 * 1000);
+  const limiter = checkRateLimit(`bug-report:${auth.user.id}`, 3, 15 * 60 * 1000);
   if (!limiter.ok) {
     return NextResponse.json(
       { error: "Çok fazla hata bildirimi gönderdiniz. Biraz sonra tekrar deneyin." },
@@ -17,15 +18,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = (await request.json()) as { message?: string };
-  const message = body.message?.trim() ?? "";
-
-  if (message.length < 8) {
-    return NextResponse.json({ error: "Lütfen daha açıklayıcı bir hata mesajı yazın." }, { status: 400 });
+  const rawBody = (await request.json()) as unknown;
+  if (!isRecord(rawBody)) {
+    return NextResponse.json({ error: "Geçersiz istek gövdesi." }, { status: 400 });
   }
 
-  if (message.length > 1200) {
-    return NextResponse.json({ error: "Hata bildirimi çok uzun." }, { status: 400 });
+  const message = validateRequiredString(rawBody.message, {
+    field: "Hata bildirimi",
+    min: 8,
+    max: 1200,
+  });
+  if (!message.ok) {
+    return NextResponse.json({ error: message.error }, { status: 400 });
   }
 
   const createdByName = auth.profile.name?.trim() || auth.profile.email?.trim() || "Kullanıcı";
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
     .from("bug_reports")
     .insert([
       {
-        message,
+        message: message.value,
         created_by_user_id: auth.user.id,
         created_by_name: createdByName,
         status: "open",

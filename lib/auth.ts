@@ -1,14 +1,43 @@
 "use client";
 
 import { supabase } from "./supabaseClient";
+import { clearClientSessionMetadata } from "./clientSession";
 
 export async function registerWithEmail(email: string, password: string, name: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { name } },
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password, name }),
   });
-  return { data, error };
+
+  const result = (await response.json().catch(() => null)) as
+    | {
+        error?: string;
+        user?: unknown;
+        session?: { access_token: string; refresh_token: string } | null;
+      }
+    | null;
+
+  if (!response.ok) {
+    return {
+      data: null,
+      error: { message: result?.error || "Kayıt sırasında bir hata oldu." },
+    };
+  }
+
+  if (result?.session?.access_token && result.session.refresh_token) {
+    await supabase.auth.setSession({
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
+    });
+  }
+
+  return {
+    data: { user: result?.user ?? null, session: result?.session ?? null },
+    error: null,
+  };
 }
 
 export async function createUserProfile(userId: string, name: string, email?: string) {
@@ -30,13 +59,42 @@ export async function createUserProfile(userId: string, name: string, email?: st
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
 
-  if (error || !data.user) {
-    return { data, error };
+  const result = (await response.json().catch(() => null)) as
+    | {
+        error?: string;
+        user?: { id: string };
+        session?: { access_token: string; refresh_token: string };
+      }
+    | null;
+
+  if (!response.ok || !result?.session || !result?.user) {
+    return {
+      data: null,
+      error: { message: result?.error || "Giriş yapılamadı." },
+    };
   }
 
-  const profile = await getUserProfile(data.user.id);
+  const sessionResult = await supabase.auth.setSession({
+    access_token: result.session.access_token,
+    refresh_token: result.session.refresh_token,
+  });
+
+  if (sessionResult.error) {
+    return {
+      data: null,
+      error: { message: sessionResult.error.message },
+    };
+  }
+
+  const profile = await getUserProfile(result.user.id);
 
   if (profile.data?.is_active === false) {
     await signOut();
@@ -49,13 +107,20 @@ export async function signInWithEmail(email: string, password: string) {
   }
 
   if (email) {
-    await syncUserProfileEmail(data.user.id, email);
+    await syncUserProfileEmail(result.user.id, email);
   }
 
-  return { data, error: null };
+  return {
+    data: {
+      user: result.user,
+      session: result.session,
+    },
+    error: null,
+  };
 }
 
 export async function signOut() {
+  clearClientSessionMetadata();
   const { error } = await supabase.auth.signOut();
   return { error };
 }

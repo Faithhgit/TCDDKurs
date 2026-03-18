@@ -5,15 +5,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import AppNavbar from "@/components/ui/AppNavbar";
 import { getUserProfile } from "@/lib/auth";
-import { getAccessToken } from "@/lib/clientApi";
+import { authorizedFetch, getAccessToken } from "@/lib/clientApi";
 import { fileToDataUrl } from "@/lib/localQuestionImages";
-import {
-  fetchTopics,
-  findDuplicateQuestion,
-  findSimilarQuestions,
-  insertQuestion,
-  type TopicRow,
-} from "@/lib/questions";
+import { fetchTopics, findDuplicateQuestion, findSimilarQuestions, type TopicRow } from "@/lib/questions";
 import { supabase } from "@/lib/supabaseClient";
 import { normalizeQuestionText } from "@/utils/normalize";
 
@@ -23,6 +17,8 @@ type SimilarQuestion = {
   status: string;
   created_by_name?: string;
 };
+
+type QuestionType = "multiple_choice" | "true_false";
 
 function getStatusLabel(status: string) {
   if (status === "approved") return "Onaylandı";
@@ -60,12 +56,14 @@ async function uploadQuestionImage(normalizedQuestionText: string, file: File) {
 export default function AddQuestionPage() {
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [topicId, setTopicId] = useState(0);
+  const [questionType, setQuestionType] = useState<QuestionType>("multiple_choice");
   const [question, setQuestion] = useState("");
   const [optionA, setOptionA] = useState("");
   const [optionB, setOptionB] = useState("");
   const [optionC, setOptionC] = useState("");
   const [optionD, setOptionD] = useState("");
   const [correctOption, setCorrectOption] = useState<"A" | "B" | "C" | "D" | "">("");
+  const [trueFalseAnswer, setTrueFalseAnswer] = useState<"A" | "B" | "">("");
   const [explanation, setExplanation] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -107,9 +105,7 @@ export default function AddQuestionPage() {
 
       setUserId(data.user.id);
       setName(resolvedName);
-      setCanDirectPublish(
-        profileRes.data?.role === "admin" || profileRes.data?.role === "manager"
-      );
+      setCanDirectPublish(profileRes.data?.role === "admin" || profileRes.data?.role === "manager");
 
       if (topicsRes.data) {
         const fetchedTopics = topicsRes.data as TopicRow[];
@@ -143,26 +139,49 @@ export default function AddQuestionPage() {
     setCheckingSimilar(false);
   }
 
+  function resetTypeSpecificFields(nextType: QuestionType) {
+    if (nextType === "multiple_choice") {
+      setTrueFalseAnswer("");
+      return;
+    }
+
+    setOptionA("");
+    setOptionB("");
+    setOptionC("");
+    setOptionD("");
+    setCorrectOption("");
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (
-      !topicId ||
-      !question.trim() ||
-      !optionA.trim() ||
-      !optionB.trim() ||
-      !optionC.trim() ||
-      !optionD.trim() ||
-      !correctOption
-    ) {
-      setError("Boş yer kalmış. Hepsini doldurup doğru şıkkı seç.");
+    if (!topicId || !question.trim()) {
+      setError("Önce konuyu ve soru metnini doldur.");
       return;
     }
 
     if (normalizedQuestion.length < 10) {
-      setError("Soru biraz fazla kısa kaldı. Biraz daha aç.");
+      setError("Soru biraz kısa kaldı. Biraz daha açalım.");
+      return;
+    }
+
+    const isMultipleChoice = questionType === "multiple_choice";
+
+    if (isMultipleChoice) {
+      if (
+        !optionA.trim() ||
+        !optionB.trim() ||
+        !optionC.trim() ||
+        !optionD.trim() ||
+        !correctOption
+      ) {
+        setError("Çoktan seçmeli soru için tüm şıkları ve doğru cevabı girmen gerekiyor.");
+        return;
+      }
+    } else if (!trueFalseAnswer) {
+      setError("Bu ifade doğru mu yanlış mı, onu seçmen gerekiyor.");
       return;
     }
 
@@ -176,24 +195,31 @@ export default function AddQuestionPage() {
     }
 
     const finalName = name || "Öğrenci";
-    const { error: insertError } = await insertQuestion({
+    const payload = {
       topic_id: topicId,
       question_text: question.trim(),
-      option_a: optionA.trim(),
-      option_b: optionB.trim(),
-      option_c: optionC.trim(),
-      option_d: optionD.trim(),
-      correct_option: correctOption,
+      option_a: isMultipleChoice ? optionA.trim() : "Doğru",
+      option_b: isMultipleChoice ? optionB.trim() : "Yanlış",
+      option_c: isMultipleChoice ? optionC.trim() : "-",
+      option_d: isMultipleChoice ? optionD.trim() : "-",
+      correct_option: isMultipleChoice ? correctOption : trueFalseAnswer,
       explanation: explanation.trim() || null,
       created_by_user_id: userId,
       created_by_name: finalName,
       normalized_question_text: normalizedQuestion,
       status: canDirectPublish ? "approved" : "pending",
+    };
+
+    const insertResponse = await authorizedFetch("/api/questions", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
 
-    if (insertError) {
+    const insertResult = (await insertResponse.json().catch(() => null)) as { error?: string } | null;
+
+    if (!insertResponse.ok) {
       setLoading(false);
-      setError(insertError.message || "Soru eklerken ufak bir terslik oldu.");
+      setError(insertResult?.error || "Soru eklerken ufak bir terslik oldu.");
       return;
     }
 
@@ -224,6 +250,7 @@ export default function AddQuestionPage() {
     setOptionC("");
     setOptionD("");
     setCorrectOption("");
+    setTrueFalseAnswer("");
     setExplanation("");
     setImagePreview("");
     setImageFile(null);
@@ -250,16 +277,21 @@ export default function AddQuestionPage() {
     }
   }
 
+  function autoResizeTextarea(target: HTMLTextAreaElement) {
+    target.style.height = "0px";
+    target.style.height = `${target.scrollHeight}px`;
+  }
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <AppNavbar />
       <div className="p-4 sm:p-8">
-        <div className="mx-auto w-full max-w-3xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
+        <div className="mx-auto w-full max-w-3xl rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-4 shadow-[var(--shadow-strong)] sm:p-5">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Soru Ekle</p>
-            <h1 className="text-xl font-semibold text-[var(--foreground)]">Yeni Soru Bırak</h1>
-            <p className="text-sm text-[var(--foreground-muted)]">
-              {canDirectPublish ? "Yönetim hesabındaysan soru direkt yayına girebilir." : "Soruyu bırak, admin bakınca yayına alır."}
+            <h1 className="mt-1.5 text-[22px] font-semibold text-[var(--foreground)]">Yeni soru bırak</h1>
+            <p className="mt-1.5 text-sm leading-6 text-[var(--foreground-muted)]">
+              Önce soru türünü seç, sonra form sadece gereken alanları göstersin.
             </p>
           </div>
 
@@ -272,128 +304,279 @@ export default function AddQuestionPage() {
               Şu an aktif konu yok. Önce konu eklemek gerekiyor.
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Konu</label>
-                <select
-                  value={topicId}
-                  onChange={(e) => setTopicId(Number(e.target.value))}
-                  className="min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
-                >
-                  {topics.map((topic) => (
-                    <option key={topic.id} value={topic.id}>
-                      {topic.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Soru Metni</label>
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="min-h-32 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
-                  placeholder="Soruyu net şekilde yaz."
-                />
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <p className="text-xs text-[var(--foreground-muted)]">
-                    Aynı sorunun tekrar düşmemesi için metin kontrol ediliyor.
-                  </p>
+            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+              <section className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-muted)] p-3.5 shadow-[var(--shadow-soft)]">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--primary)]">1. Adım</p>
+                <h2 className="mt-1.5 text-base font-semibold text-[var(--foreground)]">Soru türünü seç</h2>
+                <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                   <button
                     type="button"
-                    onClick={handleCheckSimilar}
-                    disabled={checkingSimilar || normalizedQuestion.length < 12}
-                    className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold disabled:opacity-50"
+                    onClick={() => {
+                      setQuestionType("multiple_choice");
+                      resetTypeSpecificFields("multiple_choice");
+                    }}
+                    className={`rounded-[18px] border px-3.5 py-3.5 text-left transition ${
+                      questionType === "multiple_choice"
+                        ? "border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-soft)]"
+                        : "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,transparent)]"
+                    }`}
                   >
-                    {checkingSimilar ? "Bakılıyor..." : "Benzer Sorulara Bak"}
+                    <p className="text-sm font-semibold text-[var(--foreground)]">Çoktan Seçmeli</p>
+                    <p className="mt-1 text-[13px] leading-5 text-[var(--foreground-muted)]">
+                      Klasik 4 şıklı soru yapısı.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuestionType("true_false");
+                      resetTypeSpecificFields("true_false");
+                    }}
+                    className={`rounded-[18px] border px-3.5 py-3.5 text-left transition ${
+                      questionType === "true_false"
+                        ? "border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-soft)]"
+                        : "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,transparent)]"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-[var(--foreground)]">Doğru / Yanlış</p>
+                    <p className="mt-1 text-[13px] leading-5 text-[var(--foreground-muted)]">
+                      Kısa ifade, tek karar, daha hızlı akış.
+                    </p>
                   </button>
                 </div>
-              </div>
+              </section>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <input value={optionA} onChange={(e) => setOptionA(e.target.value)} placeholder="A şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
-                <input value={optionB} onChange={(e) => setOptionB(e.target.value)} placeholder="B şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
-                <input value={optionC} onChange={(e) => setOptionC(e.target.value)} placeholder="C şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
-                <input value={optionD} onChange={(e) => setOptionD(e.target.value)} placeholder="D şıkkı" className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4" />
-              </div>
+              <section className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-muted)] p-3.5 shadow-[var(--shadow-soft)]">
+                <div className="grid gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">Konu</label>
+                    <select
+                      value={topicId}
+                      onChange={(e) => setTopicId(Number(e.target.value))}
+                      className="min-h-11 w-full rounded-[18px] border border-[var(--border)] bg-[var(--surface)] px-4"
+                    >
+                      {topics.map((topic) => (
+                        <option key={topic.id} value={topic.id}>
+                          {topic.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Doğru Şık</label>
-                <select
-                  value={correctOption}
-                  onChange={(e) => setCorrectOption(e.target.value as "A" | "B" | "C" | "D" | "")}
-                  className="min-h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
-                >
-                  <option value="">Seç</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                </select>
-              </div>
+                  <div>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">
+                          {questionType === "multiple_choice" ? "Soru metni" : "Doğru / yanlış metni"}
+                        </label>
+                        <p className="text-xs leading-5 text-[var(--foreground-muted)]">
+                          {questionType === "multiple_choice"
+                            ? "Soruyu net ve tek anlamlı olacak şekilde yaz."
+                            : "Bir ifade yaz. Kullanıcı bunun doğru mu yanlış mı olduğuna karar versin."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCheckSimilar}
+                        disabled={checkingSimilar || normalizedQuestion.length < 12}
+                        className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold disabled:opacity-50"
+                      >
+                        {checkingSimilar ? "Bakılıyor..." : "Benzer sorulara bak"}
+                      </button>
+                    </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Açıklama</label>
+                    <textarea
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      className="mt-2.5 min-h-28 w-full rounded-[18px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                      placeholder={
+                        questionType === "multiple_choice"
+                          ? "Soruyu buraya yaz."
+                          : "Örnek: Lokomotif bakımında günlük kontrol zorunludur."
+                      }
+                    />
+                  </div>
+                  <div className="rounded-[18px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_96%,white),color-mix(in_srgb,var(--surface-muted)_90%,white))] p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--foreground)]">Görsel</label>
+                        <p className="text-xs leading-5 text-[var(--foreground-muted)]">İstersen ekleyebilirsin.</p>
+                      </div>
+                      {imagePreview && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImagePreview("");
+                            setImageFile(null);
+                          }}
+                          className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground-muted)]"
+                        >
+                          Kaldır
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+                      <label className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-[16px] border border-dashed border-[var(--border-strong)] bg-[var(--surface)] px-4 py-2.5 text-center transition hover:bg-[var(--surface-muted)]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => void handleImageChange(e.target.files?.[0] ?? null)}
+                          className="hidden"
+                        />
+                        <span className="text-sm font-medium text-[var(--foreground)]">
+                          {imagePreview ? "Başka görsel seç" : "Görsel seç"}
+                        </span>
+                      </label>
+                      <p className="text-xs leading-5 text-[var(--foreground-muted)]">2 MB altı dosya rahat çalışır.</p>
+                    </div>
+
+                    {imagePreview && (
+                      <div className="mt-3 overflow-hidden rounded-[18px] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-soft)]">
+                        <Image
+                          src={imagePreview}
+                          alt="Soru görsel önizlemesi"
+                          width={1200}
+                          height={720}
+                          className="max-h-40 w-full object-contain"
+                          unoptimized
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {questionType === "multiple_choice" ? (
+                <section className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-muted)] p-3.5 shadow-[var(--shadow-soft)]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--primary)]">2. Adım</p>
+                  <h2 className="mt-1.5 text-base font-semibold text-[var(--foreground)]">Şıkları gir</h2>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {(
+                      [
+                        { key: "A", value: optionA, setter: setOptionA },
+                        { key: "B", value: optionB, setter: setOptionB },
+                        { key: "C", value: optionC, setter: setOptionC },
+                        { key: "D", value: optionD, setter: setOptionD },
+                      ] as const
+                    ).map((item) => {
+                      const isSelected = correctOption === item.key;
+
+                      return (
+                        <div
+                          key={item.key}
+                          className={`relative rounded-[16px] border px-3 py-1.5 transition ${
+                            isSelected
+                              ? "border-emerald-500 bg-emerald-50 shadow-[var(--shadow-soft)] dark:bg-emerald-950/30"
+                              : "border-[var(--border)] bg-[var(--surface)]"
+                          }`}
+                        >
+                          {isSelected ? (
+                            <span className="absolute right-3 top-2 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                              Seçildi
+                            </span>
+                          ) : null}
+                          <textarea
+                            value={item.value}
+                            onChange={(e) => {
+                              item.setter(e.target.value);
+                              autoResizeTextarea(e.currentTarget);
+                            }}
+                            onInput={(e) => autoResizeTextarea(e.currentTarget)}
+                            placeholder={`${item.key} şıkkı`}
+                            rows={1}
+                            className="min-h-7 w-full resize-none overflow-hidden bg-transparent pr-20 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--foreground-muted)]"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">Doğru şık</label>
+                    <select
+                      value={correctOption}
+                      onChange={(e) =>
+                        setCorrectOption(e.target.value as "A" | "B" | "C" | "D" | "")
+                      }
+                      className="min-h-11 w-full rounded-[18px] border border-[var(--border)] bg-[var(--surface)] px-4"
+                    >
+                      <option value="">Seç</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
+                  </div>
+                </section>
+              ) : (
+                <section className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-muted)] p-3.5 shadow-[var(--shadow-soft)]">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--primary)]">2. Adım</p>
+                  <h2 className="mt-1.5 text-base font-semibold text-[var(--foreground)]">Cevabı seç</h2>
+
+                  <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setTrueFalseAnswer("A")}
+                      className={`rounded-[18px] border px-3.5 py-3.5 text-left transition ${
+                        trueFalseAnswer === "A"
+                          ? "border-emerald-500 bg-emerald-50 shadow-[var(--shadow-soft)] dark:bg-emerald-950/30"
+                          : "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,transparent)]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--foreground)]">Doğru</p>
+                        {trueFalseAnswer === "A" ? (
+                          <span className="rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                            Seçildi
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Kullanıcı bu ifadeyi doğru olarak işaretleyecek.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTrueFalseAnswer("B")}
+                      className={`rounded-[18px] border px-3.5 py-3.5 text-left transition ${
+                        trueFalseAnswer === "B"
+                          ? "border-emerald-500 bg-emerald-50 shadow-[var(--shadow-soft)] dark:bg-emerald-950/30"
+                          : "border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,transparent)]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--foreground)]">Yanlış</p>
+                        {trueFalseAnswer === "B" ? (
+                          <span className="rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                            Seçildi
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Kullanıcı bu ifadeyi yanlış olarak işaretleyecek.
+                      </p>
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              <section className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-muted)] p-3.5 shadow-[var(--shadow-soft)]">
+                <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">Açıklama</label>
                 <textarea
                   value={explanation}
                   onChange={(e) => setExplanation(e.target.value)}
-                  className="min-h-24 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                  className="min-h-20 w-full rounded-[18px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                   placeholder="İstersen kısa bir açıklama bırak."
                 />
-              </div>
-
-              <div className="rounded-[26px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_96%,white),color-mix(in_srgb,var(--surface-muted)_90%,white))] p-4 shadow-[var(--shadow-soft)]">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Görsel Ekle</label>
-                    <p className="text-xs leading-5 text-[var(--foreground-muted)]">
-                      İstersen soruya tek bir görsel ekleyebilirsin. Soru kaydolunca diğer kullanıcılar da görür.
-                    </p>
-                  </div>
-                  {imagePreview && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImagePreview("");
-                        setImageFile(null);
-                      }}
-                      className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground-muted)]"
-                    >
-                      Görseli Kaldır
-                    </button>
-                  )}
-                </div>
-
-                <label className="mt-3 flex min-h-28 cursor-pointer items-center justify-center rounded-[22px] border border-dashed border-[var(--border-strong)] bg-[var(--surface)] px-4 py-5 text-center transition hover:bg-[var(--surface-muted)]">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => void handleImageChange(e.target.files?.[0] ?? null)}
-                    className="hidden"
-                  />
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    {imagePreview ? "Başka bir görsel seç" : "Görsel seçmek için dokun"}
-                  </span>
-                </label>
-
-                <p className="mt-2 text-xs leading-5 text-[var(--foreground-muted)]">
-                  Çok büyük dosya koyma. 2 MB altı rahat çalışır.
-                </p>
-
-                {imagePreview && (
-                  <div className="mt-4 overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-soft)]">
-                    <Image
-                      src={imagePreview}
-                      alt="Soru görsel önizlemesi"
-                      width={1200}
-                      height={720}
-                      className="max-h-56 w-full object-contain"
-                      unoptimized
-                    />
-                  </div>
-                )}
-              </div>
+              </section>
 
               {similarQuestions.length > 0 && (
                 <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
@@ -404,7 +587,7 @@ export default function AddQuestionPage() {
                         <p>{item.question_text}</p>
                         <p className="mt-1 text-xs opacity-80">
                           Durum: {getStatusLabel(item.status)}
-                          {item.created_by_name ? ` • Hazırlayan: ${item.created_by_name}` : ""}
+                          {item.created_by_name ? ` · Hazırlayan: ${item.created_by_name}` : ""}
                         </p>
                       </li>
                     ))}
@@ -413,13 +596,13 @@ export default function AddQuestionPage() {
               )}
 
               {error && (
-                <div className="rounded-2xl bg-rose-50 px-3 py-3 text-sm text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">
+                <div className="rounded-[18px] bg-rose-50 px-3 py-3 text-sm text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="rounded-2xl bg-emerald-50 px-3 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <div className="rounded-[18px] bg-emerald-50 px-3 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                   {success}
                 </div>
               )}
@@ -427,7 +610,7 @@ export default function AddQuestionPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="min-h-12 rounded-2xl bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
+                className="min-h-11 w-full rounded-[18px] bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
               >
                 {loading ? "Gönderiliyor..." : "Soruyu Gönder"}
               </button>

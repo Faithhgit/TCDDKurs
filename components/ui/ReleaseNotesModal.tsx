@@ -3,15 +3,18 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const RELEASE_VERSION = "1.1.1";
-const RELEASE_TRIGGER_KEY = "release_notes_trigger";
-const RELEASE_DISMISSED_KEY = "release_notes_dismissed_version";
+import { APP_VERSION, RELEASE_DISMISSED_KEY, RELEASE_TRIGGER_KEY } from "@/lib/appConfig";
 
 const updates = [
-  "Güvenlik tarafında biraz toparlandık. Admin işlemlerinin önemli kısmı artık daha kontrollü ilerliyor.",
-  "Sorulara localde görsel ekleme açıldı. Şimdilik aynı cihazda görünüyor, yine de iş görüyor.",
-  "Genel görünüm, yazılar ve bazı sıkıcı detaylar elden geçti. Uygulama biraz daha temiz ve rahat kullanılır hale geldi.",
-  "Hata bildir bölümü genişletildi. Bir şey saçmalarsa bize daha hızlı ulaşabiliyorsun.",
+  "Dashboard yenilendi; ana ekran daha düzenli ve daha kullanışlı hale getirildi.",
+  "Sınıf listesi, ders programı, ders durumu, tarih ve saat alanları eklendi.",
+  "Soru çöz ekranı modlu yapıya geçti: Klasik Mod, Doğru / Yanlış ve Quiz hazır.",
+  "Quiz moduna sayaç, sonuç ekranı, boş geçme ve testi bitirme akışı eklendi.",
+  "Soru ekleme ekranı yenilendi; soru türüne göre daha pratik bir akış kuruldu.",
+  "Sorulara görsel ekleme desteği geldi.",
+  "Duyuru sistemi eklendi; önemli notlar artık ana ekranda görünüyor.",
+  "Uygulama dili daha samimi hale getirildi, birçok metin ve Türkçe karakter sorunu düzeltildi.",
+  "Yükleme ekranları, genel görünüm ve mobil kullanım tarafında çeşitli iyileştirmeler yapıldı.",
 ];
 
 function shouldCheckPath(pathname: string) {
@@ -33,7 +36,7 @@ export default function ReleaseNotesModal() {
       const triggeredVersion = sessionStorage.getItem(RELEASE_TRIGGER_KEY);
       const dismissedVersion = localStorage.getItem(RELEASE_DISMISSED_KEY);
 
-      if (triggeredVersion !== RELEASE_VERSION || dismissedVersion === RELEASE_VERSION) {
+      if (triggeredVersion !== APP_VERSION || dismissedVersion === APP_VERSION) {
         setVisible(false);
         return;
       }
@@ -46,7 +49,7 @@ export default function ReleaseNotesModal() {
 
   function handleClose() {
     if (dontShowAgain) {
-      localStorage.setItem(RELEASE_DISMISSED_KEY, RELEASE_VERSION);
+      localStorage.setItem(RELEASE_DISMISSED_KEY, APP_VERSION);
     }
 
     sessionStorage.removeItem(RELEASE_TRIGGER_KEY);
@@ -59,13 +62,13 @@ export default function ReleaseNotesModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
-      <div className="w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
-        <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Küçük Not</p>
+      <div className="w-full max-w-2xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)] sm:p-6">
+        <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Sürüm Notu</p>
         <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
-          1.1.1 sürümünde neler değişti?
+          1.5.0 sürümünde neler değişti?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-          Uygulama biraz daha toparlandı. En görünür değişiklikleri şuraya bıraktık:
+          Uygulama ciddi şekilde toparlandı. En görünür değişiklikleri buraya bıraktık:
         </p>
 
         <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
@@ -93,7 +96,7 @@ export default function ReleaseNotesModal() {
 
         <div className="mt-4 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)]/70 p-4">
           <p className="text-xs leading-5 text-[var(--foreground-muted)]">
-            Not: Bu hâlâ test sürümü. Garip bir şey görürsen menüdeki hata bildir kısmına bırak.
+            Not: Bu sürüm test için açıldı. Garip bir şey görürsen menüdeki hata bildir kısmına bırak.
           </p>
         </div>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { createUserProfile, registerWithEmail, signInWithEmail } from "@/lib/auth";
+import { markSessionActiveForCurrentVersion, triggerReleaseNotesForCurrentVersion } from "@/lib/clientSession";
 
 const termsSections = [
   {
@@ -98,7 +99,9 @@ export default function RegisterPage() {
       return;
     }
 
-    const userId = signInResult.data?.user?.id ?? data?.user?.id;
+    const signedInUser = signInResult.data?.user as { id?: string } | undefined;
+    const registeredUser = data?.user as { id?: string } | null | undefined;
+    const userId = signedInUser?.id ?? registeredUser?.id;
     if (!userId) {
       setLoading(false);
       setError("Kullanıcı bilgisi alınamadı. Lütfen tekrar deneyin.");
@@ -112,6 +115,8 @@ export default function RegisterPage() {
       return;
     }
 
+    markSessionActiveForCurrentVersion();
+    triggerReleaseNotesForCurrentVersion();
     setLoading(false);
     router.push("/dashboard");
   }

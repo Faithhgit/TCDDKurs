@@ -129,19 +129,27 @@ export default function ProfilePage() {
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-                <p className="text-[11px] font-medium text-[var(--foreground-muted)] sm:text-xs sm:uppercase sm:tracking-[0.16em]">Toplam</p>
+                <p className="text-[11px] font-medium text-[var(--foreground-muted)] sm:text-xs sm:uppercase sm:tracking-[0.16em]">
+                  Toplam
+                </p>
                 <p className="mt-3 text-2xl font-semibold text-[var(--foreground)]">{stats.total}</p>
               </div>
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/30">
-                <p className="text-[11px] font-medium text-amber-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-amber-200">Bekleyen</p>
+                <p className="text-[11px] font-medium text-amber-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-amber-200">
+                  Bekleyen
+                </p>
                 <p className="mt-3 text-2xl font-semibold text-amber-900 dark:text-amber-100">{stats.pending}</p>
               </div>
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-                <p className="text-[11px] font-medium text-emerald-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-emerald-200">Onaylanan</p>
+                <p className="text-[11px] font-medium text-emerald-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-emerald-200">
+                  Onaylanan
+                </p>
                 <p className="mt-3 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{stats.approved}</p>
               </div>
               <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/40 dark:bg-rose-950/30">
-                <p className="text-[11px] font-medium text-rose-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-rose-200">Reddedilen</p>
+                <p className="text-[11px] font-medium text-rose-800 sm:text-xs sm:uppercase sm:tracking-[0.16em] dark:text-rose-200">
+                  Reddedilen
+                </p>
                 <p className="mt-3 text-2xl font-semibold text-rose-900 dark:text-rose-100">{stats.rejected}</p>
               </div>
             </div>

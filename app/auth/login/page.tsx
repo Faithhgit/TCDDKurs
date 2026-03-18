@@ -1,12 +1,12 @@
 "use client";
 
-import { signInWithEmail } from "@/lib/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-const RELEASE_VERSION = "1.1.1";
-const RELEASE_TRIGGER_KEY = "release_notes_trigger";
+import { APP_VERSION } from "@/lib/appConfig";
+import { signInWithEmail } from "@/lib/auth";
+import { markSessionActiveForCurrentVersion, triggerReleaseNotesForCurrentVersion } from "@/lib/clientSession";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,17 +33,25 @@ export default function LoginPage() {
       return;
     }
 
-    sessionStorage.setItem(RELEASE_TRIGGER_KEY, RELEASE_VERSION);
+    markSessionActiveForCurrentVersion();
+    triggerReleaseNotesForCurrentVersion();
     router.push("/dashboard");
   }
 
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-6 sm:px-8 sm:py-10">
       <div className="mx-auto w-full max-w-md rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Tekrar hoş geldin</h1>
-        <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-          Mailini ve şifreni gir, kaldığın yerden devam et.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-[var(--foreground)]">Tekrar hoş geldin</h1>
+            <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+              Mailini ve şifreni gir, kaldığın yerden devam et.
+            </p>
+          </div>
+          <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--foreground-muted)]">
+            v{APP_VERSION}
+          </span>
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
