@@ -165,8 +165,9 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-[color:color-mix(in_srgb,var(--border)_90%,transparent)] bg-[color:color-mix(in_srgb,var(--surface)_74%,transparent)] backdrop-blur-2xl">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex flex-1 flex-wrap items-center gap-2">
+        <div className="mx-auto w-full max-w-5xl px-4 py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             {routes.map((route) => {
               const isActive = path === route.href;
 
@@ -185,19 +186,19 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
                 </Link>
               );
             })}
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-2.5 py-2 text-[11px] font-medium shadow-[var(--shadow-soft)] sm:px-3 sm:text-xs">
-              <span className={`h-2.5 w-2.5 rounded-full ${courseStatus.dotClass}`} />
-              <span className={courseStatus.textClass}>{courseStatus.label}</span>
             </div>
 
-            <div className="rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-2.5 py-2 text-[11px] font-medium text-[var(--foreground-muted)] shadow-[var(--shadow-soft)] sm:px-3 sm:text-xs">
-              {formatClock(now)}
-            </div>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <div className="hidden items-center gap-2 rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-3 py-2 text-xs font-medium shadow-[var(--shadow-soft)] sm:inline-flex">
+                <span className={`h-2.5 w-2.5 rounded-full ${courseStatus.dotClass}`} />
+                <span className={courseStatus.textClass}>{courseStatus.label}</span>
+              </div>
 
-            <div className="relative" ref={menuRef}>
+              <div className="hidden rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-3 py-2 text-xs font-medium text-[var(--foreground-muted)] shadow-[var(--shadow-soft)] sm:block">
+                {formatClock(now)}
+              </div>
+
+              <div className="relative" ref={menuRef}>
               <button
                 type="button"
                 onClick={() => setMenuOpen((current) => !current)}
@@ -208,8 +209,8 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
                 ⚙
               </button>
 
-              {menuOpen && (
-                <div className="absolute right-0 top-12 w-56 rounded-[28px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_98%,white)] p-2 shadow-[var(--shadow-strong)]">
+                {menuOpen && (
+                  <div className="absolute right-0 top-12 w-56 rounded-[28px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_98%,white)] p-2 shadow-[var(--shadow-strong)]">
                   <Link
                     href="/dashboard/profile"
                     onClick={(event) => {
@@ -255,8 +256,20 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
                       {loggingOut ? "Çıkış yapılıyor..." : "Çıkış Yap"}
                     </button>
                   </div>
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 sm:mt-0 sm:hidden">
+            <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-2.5 py-2 text-[11px] font-medium shadow-[var(--shadow-soft)]">
+              <span className={`h-2.5 w-2.5 rounded-full ${courseStatus.dotClass}`} />
+              <span className={`truncate ${courseStatus.textClass}`}>{courseStatus.label}</span>
+            </div>
+
+            <div className="rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-2.5 py-2 text-[11px] font-medium text-[var(--foreground-muted)] shadow-[var(--shadow-soft)]">
+              {formatClock(now)}
             </div>
           </div>
         </div>
