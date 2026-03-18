@@ -147,6 +147,8 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
   }, []);
 
   const courseStatus = useMemo(() => getCourseStatus(now), [now]);
+  const roleLabel =
+    role === "manager" ? "Yönetici" : role === "admin" ? "Admin" : "Öğrenci";
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -168,24 +170,24 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
         <div className="mx-auto w-full max-w-5xl px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            {routes.map((route) => {
-              const isActive = path === route.href;
+              {routes.map((route) => {
+                const isActive = path === route.href;
 
-              return (
-                <Link
-                  key={route.href}
-                  href={route.href}
-                  onClick={(event) => handleProtectedNavigation(event, route.href)}
-                  className={`inline-flex min-h-10 items-center rounded-full px-4 text-xs font-semibold sm:text-sm ${
-                    isActive
-                      ? "border border-[color:color-mix(in_srgb,var(--primary)_78%,black)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]"
-                      : "border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_88%,transparent)] text-[var(--foreground)]"
-                  }`}
-                >
-                  {route.label}
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={route.href}
+                    href={route.href}
+                    onClick={(event) => handleProtectedNavigation(event, route.href)}
+                    className={`inline-flex min-h-10 items-center rounded-full px-4 text-xs font-semibold sm:text-sm ${
+                      isActive
+                        ? "border border-[color:color-mix(in_srgb,var(--primary)_78%,black)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]"
+                        : "border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_88%,transparent)] text-[var(--foreground)]"
+                    }`}
+                  >
+                    {route.label}
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -199,63 +201,92 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
               </div>
 
               <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setMenuOpen((current) => !current)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] text-lg font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)]"
-                aria-label="Ayarları aç"
-                title="Ayarlar"
-              >
-                ⚙
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((current) => !current)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_92%,white),color-mix(in_srgb,var(--surface-muted)_72%,white))] text-base font-semibold text-[var(--foreground)] shadow-[var(--shadow-soft)] transition hover:border-[color:color-mix(in_srgb,var(--primary)_24%,var(--border))] hover:text-[var(--primary)]"
+                  aria-label="Menüyü aç"
+                  title="Menü"
+                >
+                  ☰
+                </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 top-12 w-56 rounded-[28px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_98%,white)] p-2 shadow-[var(--shadow-strong)]">
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={(event) => {
-                      handleProtectedNavigation(event, "/dashboard/profile");
-                      setMenuOpen(false);
-                    }}
-                    className="block rounded-2xl px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
-                  >
-                    Profil
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBugModalOpen(true);
-                      setMenuOpen(false);
-                    }}
-                    className="block w-full rounded-2xl px-3 py-2 text-left text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
-                  >
-                    Hata Bildir
-                  </button>
-                  {role !== "student" && (
-                    <Link
-                      href="/dashboard/admin"
-                      onClick={(event) => {
-                        handleProtectedNavigation(event, "/dashboard/admin");
-                        setMenuOpen(false);
-                      }}
-                      className="block rounded-2xl px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
-                    >
-                      Admin
-                    </Link>
-                  )}
-                  <div className="mt-1 border-t border-[var(--border)] pt-2">
-                    <ThemeToggle />
-                  </div>
-                  <div className="mt-2 border-t border-[var(--border)] pt-2">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      disabled={loggingOut}
-                      className="block w-full rounded-2xl px-3 py-2 text-left text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:text-rose-300 dark:hover:bg-rose-950/30"
-                    >
-                      {loggingOut ? "Çıkış yapılıyor..." : "Çıkış Yap"}
-                    </button>
-                  </div>
+                  <div className="absolute right-0 top-12 w-72 rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),color-mix(in_srgb,var(--surface-muted)_82%,white))] p-3 shadow-[var(--shadow-strong)]">
+                    <div className="rounded-[22px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,white)] px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--primary)]">
+                        Hızlı Menü
+                      </p>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--foreground)]">
+                          Kısa ayarlar ve geçişler
+                        </p>
+                        <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-medium text-[var(--foreground-muted)]">
+                          {roleLabel}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      <Link
+                        href="/dashboard/profile"
+                        onClick={(event) => {
+                          handleProtectedNavigation(event, "/dashboard/profile");
+                          setMenuOpen(false);
+                        }}
+                        className="flex items-center justify-between rounded-[20px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,white)] px-4 py-3 text-sm text-[var(--foreground)] transition hover:border-[color:color-mix(in_srgb,var(--primary)_24%,var(--border))] hover:bg-[var(--surface-muted)]"
+                      >
+                        <span>Profil</span>
+                        <span className="text-xs text-[var(--foreground-muted)]">Ayarlar</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBugModalOpen(true);
+                          setMenuOpen(false);
+                        }}
+                        className="flex w-full items-center justify-between rounded-[20px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,white)] px-4 py-3 text-left text-sm text-[var(--foreground)] transition hover:border-[color:color-mix(in_srgb,var(--primary)_24%,var(--border))] hover:bg-[var(--surface-muted)]"
+                      >
+                        <span>Hata Bildir</span>
+                        <span className="text-xs text-[var(--foreground-muted)]">Kısa not bırak</span>
+                      </button>
+
+                      {role !== "student" && (
+                        <Link
+                          href="/dashboard/admin"
+                          onClick={(event) => {
+                            handleProtectedNavigation(event, "/dashboard/admin");
+                            setMenuOpen(false);
+                          }}
+                          className="flex items-center justify-between rounded-[20px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,white)] px-4 py-3 text-sm text-[var(--foreground)] transition hover:border-[color:color-mix(in_srgb,var(--primary)_24%,var(--border))] hover:bg-[var(--surface-muted)]"
+                        >
+                          <span>Yönetim</span>
+                          <span className="text-xs text-[var(--foreground-muted)]">Panel</span>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[1fr_auto] gap-2 border-t border-[var(--border)] pt-3">
+                      <div className="flex items-center justify-between rounded-[20px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_86%,white)] px-4 py-2.5">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--foreground)]">Tema</p>
+                          <p className="text-[11px] text-[var(--foreground-muted)]">
+                            Görünümü değiştir
+                          </p>
+                        </div>
+                        <ThemeToggle />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                        className="rounded-[20px] border border-rose-200/60 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-60 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
+                      >
+                        {loggingOut ? "Çıkılıyor..." : "Çıkış Yap"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

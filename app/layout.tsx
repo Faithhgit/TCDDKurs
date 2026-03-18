@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 import ReleaseNotesModal from "@/components/ui/ReleaseNotesModal";
 import SessionGuard from "@/components/ui/SessionGuard";
@@ -41,6 +42,12 @@ export default function RootLayout({
     <html lang="tr" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1086260801913853"
+          crossOrigin="anonymous"
+        />
         <SessionGuard />
         <ReleaseNotesModal />
         <div className="app-shell">

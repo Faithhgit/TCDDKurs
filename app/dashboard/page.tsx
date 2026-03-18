@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
+import AdsenseBanner from "@/components/ui/AdsenseBanner";
+import LeaderboardCelebrationModal from "@/components/ui/LeaderboardCelebrationModal";
+import LeaderboardBadge from "@/components/ui/LeaderboardBadge";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { type AnnouncementRow } from "@/lib/announcements";
 import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
 import { authorizedFetch } from "@/lib/clientApi";
 import { classGroup, classRoster, lessonSlots } from "@/lib/courseData";
+import { type LeaderboardEntry, normalizePersonName } from "@/lib/leaderboard";
 
 type SectionKey = "roster" | "schedule";
 
@@ -45,11 +49,14 @@ function slotDateTime(date: string, time: string) {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [openSection, setOpenSection] = useState<SectionKey | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -60,6 +67,7 @@ export default function DashboardPage() {
       }
 
       const { data: profile } = await getUserProfile(data.user.id);
+      setUserId(data.user.id);
       if (profile) {
         if (profile.is_active === false) {
           await signOut();
@@ -71,9 +79,9 @@ export default function DashboardPage() {
           void syncUserProfileEmail(data.user.id, data.user.email);
         }
 
-        setName(profile.name || data.user.user_metadata?.name || data.user.email || "Arkada?");
+        setName(profile.name || data.user.user_metadata?.name || data.user.email || "Arkadaş");
       } else {
-        setName(data.user.user_metadata?.name || data.user.email || "Arkada?");
+        setName(data.user.user_metadata?.name || data.user.email || "Arkadaş");
       }
 
       setLoading(false);
@@ -103,7 +111,20 @@ export default function DashboardPage() {
       setAnnouncements(payload?.items ?? []);
     }
 
+    async function loadLeaderboard() {
+      const response = await authorizedFetch("/api/leaderboard", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) return;
+
+      const payload = (await response.json().catch(() => null)) as { items?: LeaderboardEntry[] } | null;
+      setLeaderboard(payload?.items ?? []);
+    }
+
     void loadAnnouncements();
+    void loadLeaderboard();
   }, []);
 
   const lessonStatus = useMemo(() => {
@@ -127,8 +148,37 @@ export default function DashboardPage() {
 
   const firstName = useMemo(() => {
     const trimmed = name?.trim() ?? "";
-    return trimmed.split(" ").filter(Boolean)[0] ?? "Arkada?";
+    return trimmed.split(" ").filter(Boolean)[0] ?? "Arkadaş";
   }, [name]);
+
+  const rosterBadgeMap = useMemo(() => {
+    const map = new Map<string, LeaderboardEntry["badge"]>();
+    leaderboard.slice(0, 3).forEach((item) => {
+      map.set(normalizePersonName(item.name), item.badge);
+    });
+    return map;
+  }, [leaderboard]);
+
+  const currentRank = useMemo(() => {
+    if (!userId) return null;
+    return leaderboard.find((item) => item.userId === userId) ?? null;
+  }, [leaderboard, userId]);
+
+  useEffect(() => {
+    if (!currentRank?.badge || !userId) return;
+
+    const sessionKey = `leaderboard-celebration:${userId}:${currentRank.rank}`;
+    if (sessionStorage.getItem(sessionKey) === "shown") {
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, "shown");
+    const timer = window.setTimeout(() => {
+      setCelebrationOpen(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [currentRank, userId]);
 
   function toggleSection(section: SectionKey) {
     setOpenSection((current) => (current === section ? null : section));
@@ -147,6 +197,11 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <AppNavbar />
+      <LeaderboardCelebrationModal
+        open={celebrationOpen}
+        rank={(currentRank?.rank as 1 | 2 | 3 | undefined) ?? null}
+        onClose={() => setCelebrationOpen(false)}
+      />
       <div className="p-4 sm:p-8">
         <div className="mx-auto max-w-5xl space-y-5">
           <section className="overflow-hidden rounded-[32px] border border-[var(--border)] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--surface)_97%,white),color-mix(in_srgb,var(--surface-muted)_86%,white))] p-5 shadow-[var(--shadow-strong)] sm:p-6">
@@ -253,21 +308,30 @@ export default function DashboardPage() {
 
             <article className="rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-5 shadow-[var(--shadow-soft)]">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Duyurular</p>
-              <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">{announcements.length > 0 ? "Son duyurular" : "Şimdilik sessiz"}</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+                {announcements.length > 0 ? "Son duyurular" : "Şimdilik sessiz"}
+              </h2>
               <div className="mt-4 space-y-3">
-                {announcements.length > 0 ? announcements.slice(0, 3).map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-4 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-[var(--foreground)]">{item.title}</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--foreground-muted)]">{item.description}</p>
+                {announcements.length > 0 ? (
+                  announcements.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-4 py-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-[var(--foreground)]">{item.title}</p>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--foreground-muted)]">
+                            {item.description}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1 text-[10px] font-semibold uppercase text-[var(--foreground-muted)]">
+                          {new Date(item.created_at).toLocaleString("tr-TR")}
+                        </span>
                       </div>
-                      <span className="shrink-0 rounded-full border border-[var(--border)] px-3 py-1 text-[10px] font-semibold uppercase text-[var(--foreground-muted)]">
-                        {new Date(item.created_at).toLocaleString("tr-TR")}
-                      </span>
                     </div>
-                  </div>
-                )) : (
+                  ))
+                ) : (
                   <div className="rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-4 py-4 text-sm leading-7 text-[var(--foreground-muted)]">
                     Buraya ders değişikliği, sınav bilgisi, son dakika notu gibi şeyleri ekleyeceğiz.
                   </div>
@@ -275,6 +339,8 @@ export default function DashboardPage() {
               </div>
             </article>
           </section>
+
+          <AdsenseBanner />
 
           <section className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <article className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] shadow-[var(--shadow-soft)]">
@@ -300,22 +366,29 @@ export default function DashboardPage() {
               {openSection === "roster" && (
                 <div className="border-t border-[var(--border)] px-5 pb-5 pt-4">
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {classRoster.map((student, index) => (
-                      <div
-                        key={student.name}
-                        className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-3 py-2.5"
-                      >
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[11px] font-semibold text-[var(--foreground-muted)]">
-                          {index + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] font-medium text-[var(--foreground)]">{student.name}</p>
-                          {student.note ? (
-                            <p className="truncate text-[11px] font-semibold text-[var(--primary)]">{student.note}</p>
-                          ) : null}
+                    {classRoster.map((student, index) => {
+                      const badge = rosterBadgeMap.get(normalizePersonName(student.name));
+
+                      return (
+                        <div
+                          key={student.name}
+                          className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-3 py-2.5"
+                        >
+                          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[11px] font-semibold text-[var(--foreground-muted)]">
+                            {index + 1}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-[13px] font-medium text-[var(--foreground)]">{student.name}</p>
+                              <LeaderboardBadge badge={badge ?? null} />
+                            </div>
+                            {student.note ? (
+                              <p className="truncate text-[11px] font-semibold text-[var(--primary)]">{student.note}</p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -339,8 +412,7 @@ export default function DashboardPage() {
               {openSection === "schedule" && (
                 <div className="border-t border-[var(--border)] px-5 pb-5 pt-4">
                   <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-4 py-6 text-sm text-[var(--foreground-muted)]">
-                    Slot tablosunun içini şimdilik boş bıraktık. Sonraki turda programı daha temiz bir görünümle
-                    dolduracağız.
+                    Slot tablosunun içini şimdilik boş bıraktık. Sonraki turda programı daha temiz bir görünümle dolduracağız.
                   </div>
                 </div>
               )}
