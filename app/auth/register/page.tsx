@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import AdsenseBanner from "@/components/ui/AdsenseBanner";
 import { APP_VERSION } from "@/lib/appConfig";
 import { createUserProfile, registerWithEmail, signInWithEmail } from "@/lib/auth";
 import {
@@ -104,7 +105,10 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-6 sm:px-8 sm:py-10">
-      <div className="mx-auto grid w-full max-w-5xl gap-5 lg:grid-cols-[0.92fr_1.08fr]">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+        <AdsenseBanner />
+
+        <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
         <section className="relative overflow-hidden rounded-[32px] border border-[var(--border)] bg-[linear-gradient(150deg,color-mix(in_srgb,var(--surface)_98%,white),color-mix(in_srgb,var(--surface-muted)_82%,white))] p-6 shadow-[var(--shadow-strong)] sm:p-7">
           <div className="pointer-events-none absolute left-0 top-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_12%,transparent),transparent_68%)]" />
           <div className="relative">
@@ -256,6 +260,9 @@ export default function RegisterPage() {
             </p>
           </div>
         </section>
+        </div>
+
+        <AdsenseBanner />
       </div>
     </main>
   );
