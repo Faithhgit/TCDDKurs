@@ -188,12 +188,12 @@ export default function AppNavbar({ onNavigateAttempt }: AppNavbarProps) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-2 rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-3 py-2 text-xs font-medium shadow-[var(--shadow-soft)] sm:flex">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-2.5 py-2 text-[11px] font-medium shadow-[var(--shadow-soft)] sm:px-3 sm:text-xs">
               <span className={`h-2.5 w-2.5 rounded-full ${courseStatus.dotClass}`} />
               <span className={courseStatus.textClass}>{courseStatus.label}</span>
             </div>
 
-            <div className="hidden rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-3 py-2 text-xs font-medium text-[var(--foreground-muted)] shadow-[var(--shadow-soft)] sm:block">
+            <div className="rounded-full border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_90%,transparent)] px-2.5 py-2 text-[11px] font-medium text-[var(--foreground-muted)] shadow-[var(--shadow-soft)] sm:px-3 sm:text-xs">
               {formatClock(now)}
             </div>
 
