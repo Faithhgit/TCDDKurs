@@ -79,6 +79,8 @@ type AnnouncementsPayload = {
   items: AnnouncementRow[];
 };
 
+type ResetConfirmAction = "solve-history" | "audit-logs" | null;
+
 const panelClass = "rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md";
 const inputClass = "min-h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4";
 const PAGE_SIZE = 10;
@@ -197,6 +199,9 @@ export default function AdminPage() {
   const [logQuery, setLogQuery] = useState("");
   const [logActorRole, setLogActorRole] = useState<"all" | "admin" | "manager">("all");
   const [logTargetType, setLogTargetType] = useState<"all" | "question" | "user" | "bug_report" | "announcement">("all");
+  const [resettingSolveHistory, setResettingSolveHistory] = useState(false);
+  const [resettingAuditLogs, setResettingAuditLogs] = useState(false);
+  const [resetConfirmAction, setResetConfirmAction] = useState<ResetConfirmAction>(null);
 
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionRow | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
@@ -385,6 +390,86 @@ export default function AdminPage() {
     setLogs(payload.items ?? []);
     setLogTotal(payload.total ?? 0);
     setLogHasMore(payload.hasMore);
+  }
+
+  async function resetSolveHistory() {
+    if (role !== "manager" || resettingSolveHistory) return;
+
+    setResettingSolveHistory(true);
+    const response = await authorizedFetch("/api/admin/logs/reset-solve-history", {
+      method: "POST",
+    });
+    setResettingSolveHistory(false);
+
+    const result = (await response.json().catch(() => null)) as
+      | {
+          error?: string;
+          deleted?: {
+            quiz_attempts?: number;
+            question_attempts?: number;
+            question_progress?: number;
+          };
+        }
+      | null;
+
+    if (!response.ok) {
+      setMessage(result?.error || "Çözüm kayıtları temizlenemedi.");
+      return;
+    }
+
+    setMessage(
+      `Çözüm kayıtları temizlendi. Quiz: ${result?.deleted?.quiz_attempts ?? 0}, deneme: ${result?.deleted?.question_attempts ?? 0}, ilerleme: ${result?.deleted?.question_progress ?? 0}`
+    );
+    await loadLogs();
+  }
+
+  async function resetAuditLogs() {
+    if (role !== "manager" || resettingAuditLogs) return;
+
+    setResettingAuditLogs(true);
+    const response = await authorizedFetch("/api/admin/logs/reset-audit-logs", {
+      method: "POST",
+    });
+    setResettingAuditLogs(false);
+
+    const result = (await response.json().catch(() => null)) as
+      | {
+          error?: string;
+          deleted?: {
+            audit_logs?: number;
+          };
+        }
+      | null;
+
+    if (!response.ok) {
+      setMessage(result?.error || "Log kayıtları temizlenemedi.");
+      return;
+    }
+
+    setMessage(`Log kayıtları temizlendi. Silinen log: ${result?.deleted?.audit_logs ?? 0}`);
+    await loadLogs();
+  }
+
+  function openResetConfirm(action: Exclude<ResetConfirmAction, null>) {
+    setResetConfirmAction(action);
+  }
+
+  function closeResetConfirm() {
+    setResetConfirmAction(null);
+  }
+
+  async function confirmResetAction() {
+    const action = resetConfirmAction;
+    closeResetConfirm();
+
+    if (action === "solve-history") {
+      await resetSolveHistory();
+      return;
+    }
+
+    if (action === "audit-logs") {
+      await resetAuditLogs();
+    }
   }
 
   async function refreshVisibleTab() {
@@ -697,6 +782,39 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <AppNavbar />
+      {resetConfirmAction ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-5 shadow-[var(--shadow-strong)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--primary)]">Onay</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
+              {resetConfirmAction === "solve-history"
+                ? "Çözüm verileri temizlensin mi?"
+                : "Log kayıtları temizlensin mi?"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
+              {resetConfirmAction === "solve-history"
+                ? "Soru denemeleri, soru ilerlemesi ve quiz kayıtları tablolarındaki test verileri silinecek."
+                : "Audit log kayıtları silinecek. Bu işlem geri alınmaz."}
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={closeResetConfirm}
+                className="min-h-11 flex-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmResetAction()}
+                className="min-h-11 flex-1 rounded-2xl bg-[var(--foreground)] px-4 py-3 text-sm font-semibold text-[var(--surface)]"
+              >
+                Evet, temizle
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="p-4 sm:p-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 xl:flex-row">
           <section className={`flex-1 ${panelClass}`}>
@@ -981,6 +1099,36 @@ export default function AdminPage() {
 
             {tab === "logs" && role === "manager" && (
               <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800 dark:text-amber-200">
+                        Test Temizliği
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-amber-900 dark:text-amber-100">
+                        Soru denemeleri, soru ilerlemesi ve quiz kayıtları tablolarındaki test verilerini tek tuşla temizler.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:min-w-[14rem]">
+                      <button
+                        type="button"
+                        onClick={() => openResetConfirm("solve-history")}
+                        disabled={resettingSolveHistory}
+                        className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                      >
+                        {resettingSolveHistory ? "Temizleniyor..." : "Çözüm Verilerini Temizle"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openResetConfirm("audit-logs")}
+                        disabled={resettingAuditLogs}
+                        className="rounded-2xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-60 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200"
+                      >
+                        {resettingAuditLogs ? "Temizleniyor..." : "Logları Temizle"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid gap-3 md:grid-cols-3">
                   <input value={logQuery} onChange={(e) => { setLogQuery(e.target.value); setLogPage(1); }} placeholder="İşlem veya kişi ara" className={inputClass} />
                   <select value={logActorRole} onChange={(e) => { setLogActorRole(e.target.value as "all" | "admin" | "manager"); setLogPage(1); }} className={inputClass}>

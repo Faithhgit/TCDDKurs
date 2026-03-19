@@ -6,15 +6,18 @@ import { useEffect, useState } from "react";
 import { APP_VERSION, RELEASE_DISMISSED_KEY, RELEASE_TRIGGER_KEY } from "@/lib/appConfig";
 
 const updates = [
-  "Dashboard yenilendi; ana ekran daha düzenli ve daha kullanışlı hale getirildi.",
-  "Sınıf listesi, ders programı, ders durumu, tarih ve saat alanları eklendi.",
-  "Soru çöz ekranı modlu yapıya geçti: Klasik Mod, Doğru / Yanlış ve Quiz hazır.",
-  "Quiz moduna sayaç, sonuç ekranı, boş geçme ve testi bitirme akışı eklendi.",
-  "Soru ekleme ekranı yenilendi; soru türüne göre daha pratik bir akış kuruldu.",
-  "Sorulara görsel ekleme desteği geldi.",
-  "Duyuru sistemi eklendi; önemli notlar artık ana ekranda görünüyor.",
-  "Uygulama dili daha samimi hale getirildi, birçok metin ve Türkçe karakter sorunu düzeltildi.",
-  "Yükleme ekranları, genel görünüm ve mobil kullanım tarafında çeşitli iyileştirmeler yapıldı.",
+  "Soru çöz ekranı modlu yapıya taşındı.",
+  "Klasik Mod, Doğru / Yanlış ve Quiz akışları aktif hale geldi.",
+  "Quiz moduna süre sayacı, boş geçme, testi bitirme ve sonuç ekranı eklendi.",
+  "Çözüm geçmişi ve quiz kayıt altyapısı kuruldu.",
+  "Profil ekranına çözüm istatistikleri ve quiz geçmişi eklendi.",
+  "Sınıf içi liderlik sistemi genişletildi.",
+  "Onaylı soru, çözülen soru, doğru sayısı ve quiz için ayrı liderlik kategorileri eklendi.",
+  "İlk 3 sıralama için rozet sistemi ve girişte tebrik kutusu geliştirildi.",
+  "Duyuru sistemi eklendi; duyuru ekleme, düzenleme ve silme desteklendi.",
+  "Şifremi unuttum ve şifre sıfırlama akışı eklendi.",
+  "Yükleme ekranları, giriş/kayıt sayfaları ve genel arayüzde görsel düzenlemeler yapıldı.",
+  "Mobil uyumluluk ve navbar davranışı iyileştirildi.",
 ];
 
 function shouldCheckPath(pathname: string) {
@@ -66,10 +69,10 @@ export default function ReleaseNotesModal() {
         <div className="my-auto w-full max-w-2xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_24px_80px_rgba(15,23,42,0.22)] max-sm:max-h-[calc(100dvh-2rem)] max-sm:overflow-y-auto sm:p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Sürüm Notu</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)] sm:text-2xl">
-            1.5.0 sürümünde neler değişti?
+            1.5.2 sürümünde neler değişti?
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-            Uygulama ciddi şekilde toparlandı. En görünür değişiklikleri buraya bıraktık:
+            Bu sürümde soru çözme, istatistik ve liderlik tarafı belirgin şekilde güçlendirildi.
           </p>
 
           <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
@@ -97,7 +100,7 @@ export default function ReleaseNotesModal() {
 
           <div className="mt-4 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)]/70 p-4">
             <p className="text-xs leading-5 text-[var(--foreground-muted)]">
-              Not: Bu sürüm test için açıldı. Garip bir şey görürsen menüdeki hata bildir kısmına bırak.
+              Not: Garip bir durum görürsen menüdeki hata bildir alanından iletebilirsin.
             </p>
           </div>
 

@@ -1,8 +1,17 @@
 "use client";
 
+import LeaderboardMedal from "@/components/ui/LeaderboardMedal";
+import { type LeaderboardCategory } from "@/lib/leaderboard";
+
+export type LeaderboardCelebrationItem = {
+  category: LeaderboardCategory;
+  badge: "gold" | "silver" | "bronze";
+  rank: 1 | 2 | 3;
+};
+
 type LeaderboardCelebrationModalProps = {
   open: boolean;
-  rank: 1 | 2 | 3 | null;
+  items: LeaderboardCelebrationItem[];
   onClose: () => void;
 };
 
@@ -17,45 +26,19 @@ const confettiItems = [
   { left: "90%", delay: "0.4s", duration: "4.7s", color: "#34d399", rotate: "6deg" },
 ];
 
-function getRankMeta(rank: 1 | 2 | 3 | null) {
-  if (rank === 1) {
-    return {
-      emoji: "🥇",
-      title: "Tebrikler",
-      subtitle: "Soru ekleme sıralamasında 1. sıradasın.",
-      value: "1.",
-    };
-  }
-
-  if (rank === 2) {
-    return {
-      emoji: "🥈",
-      title: "Tebrikler",
-      subtitle: "Soru ekleme sıralamasında 2. sıradasın.",
-      value: "2.",
-    };
-  }
-
-  if (rank === 3) {
-    return {
-      emoji: "🥉",
-      title: "Tebrikler",
-      subtitle: "Soru ekleme sıralamasında 3. sıradasın.",
-      value: "3.",
-    };
-  }
-
-  return null;
+function categoryLabel(category: LeaderboardCategory) {
+  if (category === "approved") return "Onaylı soru";
+  if (category === "solved") return "Çözülen soru";
+  if (category === "correct") return "Doğru sayısı";
+  return "Quiz";
 }
 
 export default function LeaderboardCelebrationModal({
   open,
-  rank,
+  items,
   onClose,
 }: LeaderboardCelebrationModalProps) {
-  const meta = getRankMeta(rank);
-
-  if (!open || !meta) {
+  if (!open || items.length === 0) {
     return null;
   }
 
@@ -80,27 +63,41 @@ export default function LeaderboardCelebrationModal({
           </div>
 
           <div className="relative text-center">
-            <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-3xl shadow-[var(--shadow-soft)]">
-              {meta.emoji}
+            <div className="mx-auto flex w-fit flex-wrap items-center justify-center gap-3 rounded-[26px] border border-[var(--border)] bg-[var(--surface)] px-5 py-4 shadow-[var(--shadow-soft)]">
+              {items.map((item) => (
+                <LeaderboardMedal
+                  key={`${item.category}-${item.rank}`}
+                  badge={item.badge}
+                  category={item.category}
+                  size="lg"
+                />
+              ))}
             </div>
 
-            <p className="mt-4 text-xs uppercase tracking-[0.24em] text-[var(--primary)]">
-              Başarı Rozeti
-            </p>
+            <p className="mt-4 text-xs uppercase tracking-[0.24em] text-[var(--primary)]">Başarı Rozetleri</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-4xl">
-              {meta.title}
+              Tebrikler
             </h2>
             <p className="mt-3 text-sm leading-6 text-[var(--foreground-muted)] sm:text-base">
-              {meta.subtitle}
+              Sıralamalarda öne çıktığın rozetler burada görünüyor.
             </p>
 
-            <div className="mt-6 rounded-[28px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_88%,white)] px-6 py-6">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
-                Sıralaman
-              </p>
-              <p className="mt-2 text-6xl font-semibold tracking-[-0.06em] text-[var(--foreground)]">
-                {meta.value}
-              </p>
+            <div className="mt-6 space-y-3">
+              {items.map((item) => (
+                <div
+                  key={`${item.category}-${item.rank}-row`}
+                  className="flex items-center justify-between rounded-[24px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_88%,white)] px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <LeaderboardMedal badge={item.badge} category={item.category} size="sm" />
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--foreground)]">{categoryLabel(item.category)}</p>
+                      <p className="text-xs text-[var(--foreground-muted)]">{item.rank}. sıradasın</p>
+                    </div>
+                  </div>
+                  <span className="text-lg font-semibold text-[var(--foreground)]">#{item.rank}</span>
+                </div>
+              ))}
             </div>
 
             <div className="mt-6 flex justify-center">

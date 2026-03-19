@@ -2,42 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { type LeaderboardEntry } from "@/lib/leaderboard";
+import LeaderboardMedal from "@/components/ui/LeaderboardMedal";
+import { type LeaderboardCategory, type LeaderboardEntry, type RankedLeaderboardEntry } from "@/lib/leaderboard";
+
+type BadgeType = LeaderboardEntry["badge"] | RankedLeaderboardEntry["badge"];
 
 type LeaderboardBadgeProps = {
-  badge: LeaderboardEntry["badge"];
+  badge: BadgeType;
+  category?: LeaderboardCategory;
   className?: string;
+  label?: string;
 };
 
-function getBadgeMeta(badge: LeaderboardEntry["badge"]) {
-  if (badge === "gold") {
-    return {
-      emoji: "🥇",
-      label: "Soru ekleme sıralamasında 1.",
-    };
-  }
-
-  if (badge === "silver") {
-    return {
-      emoji: "🥈",
-      label: "Soru ekleme sıralamasında 2.",
-    };
-  }
-
-  if (badge === "bronze") {
-    return {
-      emoji: "🥉",
-      label: "Soru ekleme sıralamasında 3.",
-    };
-  }
-
+function getBadgeMeta(badge: BadgeType, label?: string) {
+  if (badge === "gold") return { label: label ?? "Sıralamada 1." };
+  if (badge === "silver") return { label: label ?? "Sıralamada 2." };
+  if (badge === "bronze") return { label: label ?? "Sıralamada 3." };
   return null;
 }
 
-export default function LeaderboardBadge({ badge, className = "" }: LeaderboardBadgeProps) {
+export default function LeaderboardBadge({
+  badge,
+  category = "approved",
+  className = "",
+  label,
+}: LeaderboardBadgeProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const meta = getBadgeMeta(badge);
+  const meta = getBadgeMeta(badge, label);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -62,10 +54,10 @@ export default function LeaderboardBadge({ badge, className = "" }: LeaderboardB
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm shadow-[var(--shadow-soft)]"
+        className="inline-flex items-center justify-center rounded-full"
         aria-label={meta.label}
       >
-        {meta.emoji}
+        <LeaderboardMedal badge={badge} category={category} size="sm" />
       </button>
 
       {open ? (

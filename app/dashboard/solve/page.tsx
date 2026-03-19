@@ -3,13 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import AppNavbar from "@/components/ui/AppNavbar";
+import { authorizedFetch } from "@/lib/clientApi";
 import { getLocalQuestionImage } from "@/lib/localQuestionImages";
 import { getQuestionImagePublicUrl } from "@/lib/questionImages";
 import { fetchQuestionsByTopic, fetchTopics, type QuestionRow, type TopicRow } from "@/lib/questions";
+import {
+  finishQuizAttempt,
+  recordQuestionAttempt,
+  recordQuizAnswer,
+  startQuizAttempt,
+} from "@/lib/solveHistory";
 
 type TopicFilterValue = "all" | number;
 type SolveMode = "classic" | "true-false" | "quiz" | null;
@@ -87,6 +94,7 @@ function SolvePageContent() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sharedImageAvailability, setSharedImageAvailability] = useState<Record<string, boolean>>({});
+  const [solvedQuestionIds, setSolvedQuestionIds] = useState<number[]>([]);
   const sharedImageAvailabilityRef = useRef<Record<string, boolean>>({});
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -102,6 +110,13 @@ function SolvePageContent() {
   const [quizQueue, setQuizQueue] = useState<number[]>([]);
   const [quizReviewPage, setQuizReviewPage] = useState(1);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [activeQuizAttemptId, setActiveQuizAttemptId] = useState<number | null>(null);
+  const [quizStartedAt, setQuizStartedAt] = useState<number | null>(null);
+  const quizAnswersRef = useRef<Record<number, Exclude<AnswerChoice, "">>>({});
+  const quizFinishSentRef = useRef(false);
+  const finalizeQuizRecordRef = useRef<
+    ((endedReason: "user_finished" | "time_up" | "cancelled") => Promise<void>) | null
+  >(null);
 
   useEffect(() => {
     setSelectedMode(getModeFromParam(searchParams.get("mode")));
@@ -112,6 +127,50 @@ function SolvePageContent() {
   }, [sharedImageAvailability]);
 
   useEffect(() => {
+    quizAnswersRef.current = quizAnswers;
+  }, [quizAnswers]);
+
+  const finalizeQuizRecord = useCallback(async (
+    endedReason: "user_finished" | "time_up" | "cancelled",
+    answersSnapshot?: Record<number, Exclude<AnswerChoice, "">>
+  ) => {
+    if (quizFinishSentRef.current || !activeQuizAttemptId) {
+      return;
+    }
+
+    quizFinishSentRef.current = true;
+
+    const answers = answersSnapshot ?? quizAnswersRef.current;
+    const answeredCount = Object.keys(answers).length;
+    const correctCount = questions.filter((question) => answers[question.id] === question.correct_option).length;
+    const wrongCount = answeredCount - correctCount;
+    const skippedCount = Math.max(questions.length - answeredCount, 0);
+    const elapsedSeconds = quizStartedAt
+      ? Math.min(Math.max(Math.floor((Date.now() - quizStartedAt) / 1000), 0), 40 * 60)
+      : 0;
+
+    try {
+      await finishQuizAttempt({
+        quizAttemptId: activeQuizAttemptId,
+        answeredCount,
+        correctCount,
+        wrongCount,
+        skippedCount,
+        elapsedSeconds,
+        endedReason,
+      });
+      setActiveQuizAttemptId(null);
+    } catch (error) {
+      console.error("Quiz finish record failed", error);
+      quizFinishSentRef.current = false;
+    }
+  }, [activeQuizAttemptId, questions, quizStartedAt]);
+
+  useEffect(() => {
+    finalizeQuizRecordRef.current = (endedReason) => finalizeQuizRecord(endedReason);
+  }, [finalizeQuizRecord]);
+
+  useEffect(() => {
     async function loadTopics() {
       setLoading(true);
       const topicsRes = await fetchTopics();
@@ -120,6 +179,22 @@ function SolvePageContent() {
     }
 
     void loadTopics();
+  }, []);
+
+  useEffect(() => {
+    async function loadSolvedQuestions() {
+      const response = await authorizedFetch("/api/profile/solved-questions", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) return;
+
+      const payload = (await response.json().catch(() => null)) as { questionIds?: number[] } | null;
+      setSolvedQuestionIds(payload?.questionIds ?? []);
+    }
+
+    void loadSolvedQuestions();
   }, []);
 
   useEffect(() => {
@@ -160,6 +235,9 @@ function SolvePageContent() {
         setQuizAnswers({});
         setQuizQueue([]);
         setQuizReviewPage(1);
+        setActiveQuizAttemptId(null);
+        setQuizStartedAt(null);
+        quizFinishSentRef.current = false;
         setLoading(false);
         return;
       }
@@ -185,6 +263,9 @@ function SolvePageContent() {
         setQuizAnswers({});
         setQuizQueue(quizQuestions.map((question) => question.id));
         setQuizReviewPage(1);
+        setActiveQuizAttemptId(null);
+        setQuizStartedAt(null);
+        quizFinishSentRef.current = false;
         setLoading(false);
         return;
       }
@@ -204,6 +285,9 @@ function SolvePageContent() {
       setChoice("");
       setFeedback("");
       setShowExplanation(false);
+      setActiveQuizAttemptId(null);
+      setQuizStartedAt(null);
+      quizFinishSentRef.current = false;
       setLoading(false);
     }
 
@@ -219,6 +303,7 @@ function SolvePageContent() {
           window.clearInterval(timer);
           setQuizFinished(true);
           setQuizStarted(false);
+          void finalizeQuizRecordRef.current?.("time_up");
           return 0;
         }
 
@@ -257,6 +342,7 @@ function SolvePageContent() {
 
     return questions[currentIndex] ?? null;
   }, [currentIndex, questions, quizFinished, quizQueue, quizStarted, selectedMode]);
+  const currentQuestionSolved = currentQuestion ? solvedQuestionIds.includes(currentQuestion.id) : false;
 
   const localQuestionImage = useMemo(() => {
     if (!currentQuestion) return null;
@@ -321,18 +407,32 @@ function SolvePageContent() {
     if (!currentQuestion || choice) return;
 
     if (isQuizMode) {
-      setQuizAnswers((prev) => ({
-        ...prev,
+      const nextAnswers = {
+        ...quizAnswersRef.current,
         [currentQuestion.id]: selected,
-      }));
+      };
+
+      setQuizAnswers(nextAnswers);
+      if (activeQuizAttemptId) {
+        void recordQuizAnswer({
+          quizAttemptId: activeQuizAttemptId,
+          questionId: currentQuestion.id,
+          selectedOption: selected,
+          isCorrect: selected === currentQuestion.correct_option,
+        }).catch((error) => {
+          console.error("Quiz answer record failed", error);
+        });
+      }
 
       if (quizQueue.length <= 1) {
         setQuizQueue([]);
         setQuizFinished(true);
         setQuizStarted(false);
+        void finalizeQuizRecord("user_finished", nextAnswers);
       } else {
         setQuizQueue((prev) => prev.slice(1));
       }
+      setSolvedQuestionIds((prev) => (prev.includes(currentQuestion.id) ? prev : [...prev, currentQuestion.id]));
 
       return;
     }
@@ -348,6 +448,15 @@ function SolvePageContent() {
 
     setFeedback(isCorrect ? "Doğru, devam." : `Olmadı. Doğru cevap: ${correctLabel}`);
     setShowExplanation(true);
+    void recordQuestionAttempt({
+      questionId: currentQuestion.id,
+      mode: isTrueFalseMode ? "true_false" : "classic",
+      selectedOption: selected,
+      isCorrect,
+    }).catch((error) => {
+      console.error("Question attempt record failed", error);
+    });
+    setSolvedQuestionIds((prev) => (prev.includes(currentQuestion.id) ? prev : [...prev, currentQuestion.id]));
   }
 
   function skipQuizQuestion() {
@@ -380,10 +489,14 @@ function SolvePageContent() {
     setPendingHref(null);
   }
 
-  function proceedModeChange() {
+  async function proceedModeChange() {
     if (!selectedMode) {
       closeConfirm();
       return;
+    }
+
+    if (selectedMode === "quiz" && quizStarted && !quizFinished) {
+      await finalizeQuizRecord("cancelled");
     }
 
     if (pendingHref) {
@@ -425,7 +538,20 @@ function SolvePageContent() {
     return false;
   }
 
-  function startQuiz() {
+  async function startQuiz() {
+    try {
+      const quizAttemptId = await startQuizAttempt({
+        topicId: null,
+        questionIds: questions.map((question) => question.id),
+        durationSeconds: 40 * 60,
+      });
+      setActiveQuizAttemptId(quizAttemptId);
+    } catch (error) {
+      console.error("Quiz start record failed", error);
+      setActiveQuizAttemptId(null);
+    }
+
+    quizFinishSentRef.current = false;
     setQuizStarted(true);
     setQuizFinished(false);
     setQuizFinishOpen(false);
@@ -438,14 +564,16 @@ function SolvePageContent() {
     setShowExplanation(false);
     setQuizSecondsLeft(40 * 60);
     setQuizStartOpen(false);
+    setQuizStartedAt(Date.now());
     openToast("Quiz başladı. Süre akıyor.");
   }
 
-  function finishQuiz() {
+  async function finishQuiz() {
     setQuizStarted(false);
     setQuizFinished(true);
     setQuizFinishOpen(false);
     setQuizQueue([]);
+    await finalizeQuizRecord("user_finished");
   }
 
   function renderQuestionCard(question: QuestionRow) {
@@ -463,6 +591,11 @@ function SolvePageContent() {
             />
           </div>
         )}
+        {currentQuestionSolved ? (
+          <div className="mb-3 inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-800 shadow-[var(--shadow-soft)] dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            Daha önce çözüldü
+          </div>
+        ) : null}
         <h3 className="break-words text-2xl font-semibold leading-9 text-[var(--foreground)] sm:text-[2rem] sm:leading-10 [overflow-wrap:anywhere]">
           {question.question_text}
         </h3>

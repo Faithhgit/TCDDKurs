@@ -2,20 +2,38 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
 import AdsenseBanner from "@/components/ui/AdsenseBanner";
-import LeaderboardCelebrationModal from "@/components/ui/LeaderboardCelebrationModal";
+import LeaderboardCelebrationModal, {
+  type LeaderboardCelebrationItem,
+} from "@/components/ui/LeaderboardCelebrationModal";
 import LeaderboardBadge from "@/components/ui/LeaderboardBadge";
 import AppNavbar from "@/components/ui/AppNavbar";
 import { type AnnouncementRow } from "@/lib/announcements";
 import { getUser, getUserProfile, signOut, syncUserProfileEmail } from "@/lib/auth";
 import { authorizedFetch } from "@/lib/clientApi";
 import { classGroup, classRoster, lessonSlots } from "@/lib/courseData";
-import { type LeaderboardEntry, normalizePersonName } from "@/lib/leaderboard";
+import { type LeaderboardCategory, type LeaderboardEntry, type RankedLeaderboardEntry, normalizePersonName } from "@/lib/leaderboard";
 
 type SectionKey = "roster" | "schedule";
+type DashboardLeaderboardPayload = {
+  items?: LeaderboardEntry[];
+  categories?: {
+    approved?: LeaderboardEntry[];
+    solved?: RankedLeaderboardEntry[];
+    correct?: RankedLeaderboardEntry[];
+    quiz?: RankedLeaderboardEntry[];
+  };
+};
+
+type DashboardLeaderboardCategories = {
+  approved: LeaderboardEntry[];
+  solved: RankedLeaderboardEntry[];
+  correct: RankedLeaderboardEntry[];
+  quiz: RankedLeaderboardEntry[];
+};
 
 function parseScheduleDate(value: string) {
   const [day, month, year] = value.split(".").map(Number);
@@ -55,8 +73,15 @@ export default function DashboardPage() {
   const [openSection, setOpenSection] = useState<SectionKey | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardCategories, setLeaderboardCategories] = useState<DashboardLeaderboardCategories>({
+    approved: [],
+    solved: [],
+    correct: [],
+    quiz: [],
+  });
+  const [celebrationItems, setCelebrationItems] = useState<LeaderboardCelebrationItem[]>([]);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const lastCelebrationSignatureRef = useRef("");
 
   useEffect(() => {
     async function load() {
@@ -119,8 +144,13 @@ export default function DashboardPage() {
 
       if (!response.ok) return;
 
-      const payload = (await response.json().catch(() => null)) as { items?: LeaderboardEntry[] } | null;
-      setLeaderboard(payload?.items ?? []);
+      const payload = (await response.json().catch(() => null)) as DashboardLeaderboardPayload | null;
+      setLeaderboardCategories({
+        approved: payload?.categories?.approved ?? payload?.items ?? [],
+        solved: payload?.categories?.solved ?? [],
+        correct: payload?.categories?.correct ?? [],
+        quiz: payload?.categories?.quiz ?? [],
+      });
     }
 
     void loadAnnouncements();
@@ -152,33 +182,103 @@ export default function DashboardPage() {
   }, [name]);
 
   const rosterBadgeMap = useMemo(() => {
-    const map = new Map<string, LeaderboardEntry["badge"]>();
-    leaderboard.slice(0, 3).forEach((item) => {
-      map.set(normalizePersonName(item.name), item.badge);
-    });
-    return map;
-  }, [leaderboard]);
+    const map = new Map<string, LeaderboardCelebrationItem[]>();
+    const categoryEntries: Array<[LeaderboardCategory, Array<LeaderboardEntry | RankedLeaderboardEntry>]> = [
+      ["approved", leaderboardCategories.approved ?? []],
+      ["solved", leaderboardCategories.solved ?? []],
+      ["correct", leaderboardCategories.correct ?? []],
+      ["quiz", leaderboardCategories.quiz ?? []],
+    ];
 
-  const currentRank = useMemo(() => {
-    if (!userId) return null;
-    return leaderboard.find((item) => item.userId === userId) ?? null;
-  }, [leaderboard, userId]);
+    categoryEntries.forEach(([category, entries]) => {
+      entries.slice(0, 3).forEach((item) => {
+        if (!item.badge || item.rank > 3) return;
+        const key = normalizePersonName(item.name);
+        const current = map.get(key) ?? [];
+        current.push({
+          category,
+          badge: item.badge,
+          rank: item.rank as 1 | 2 | 3,
+        });
+        map.set(key, current);
+      });
+    });
+
+    return map;
+  }, [leaderboardCategories]);
+
+  const currentCelebrationItems = useMemo(() => {
+    if (!userId) return [];
+
+    const items: LeaderboardCelebrationItem[] = [];
+    const categoryEntries: Array<[LeaderboardCategory, Array<LeaderboardEntry | RankedLeaderboardEntry>]> = [
+      ["approved", leaderboardCategories.approved ?? []],
+      ["solved", leaderboardCategories.solved ?? []],
+      ["correct", leaderboardCategories.correct ?? []],
+      ["quiz", leaderboardCategories.quiz ?? []],
+    ];
+
+    categoryEntries.forEach(([category, entries]) => {
+      const found = entries.find((item) => item.userId === userId);
+      if (!found?.badge || found.rank > 3) return;
+      items.push({
+        category,
+        badge: found.badge,
+        rank: found.rank as 1 | 2 | 3,
+      });
+    });
+
+    return items;
+  }, [leaderboardCategories, userId]);
 
   useEffect(() => {
-    if (!currentRank?.badge || !userId) return;
+    if (currentCelebrationItems.length === 0 || !userId) return;
 
-    const sessionKey = `leaderboard-celebration:${userId}:${currentRank.rank}`;
-    if (sessionStorage.getItem(sessionKey) === "shown") {
+    const storageKey = `leaderboard-earned-badges:${userId}`;
+    const sessionKey = `leaderboard-login-celebration:${userId}`;
+    const currentKeys = currentCelebrationItems
+      .map((item) => `${item.category}-${item.rank}`)
+      .sort();
+    const currentSignature = currentKeys.join("|");
+    const previousKeys = (() => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    const previousSet = new Set(previousKeys);
+    const newlyEarned = currentCelebrationItems.filter((item) => !previousSet.has(`${item.category}-${item.rank}`));
+    const shouldShowOnLogin = sessionStorage.getItem(sessionKey) !== "shown";
+
+    localStorage.setItem(storageKey, JSON.stringify(currentKeys));
+
+    if (shouldShowOnLogin) {
+      sessionStorage.setItem(sessionKey, "shown");
+      lastCelebrationSignatureRef.current = currentSignature;
+      const timer = window.setTimeout(() => {
+        setCelebrationItems(currentCelebrationItems);
+        setCelebrationOpen(true);
+      }, 0);
+
+      return () => window.clearTimeout(timer);
+    }
+
+    if (newlyEarned.length === 0 || lastCelebrationSignatureRef.current === currentSignature) {
       return;
     }
 
-    sessionStorage.setItem(sessionKey, "shown");
+    lastCelebrationSignatureRef.current = currentSignature;
     const timer = window.setTimeout(() => {
+      setCelebrationItems(newlyEarned);
       setCelebrationOpen(true);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [currentRank, userId]);
+  }, [currentCelebrationItems, userId]);
 
   function toggleSection(section: SectionKey) {
     setOpenSection((current) => (current === section ? null : section));
@@ -199,8 +299,11 @@ export default function DashboardPage() {
       <AppNavbar />
       <LeaderboardCelebrationModal
         open={celebrationOpen}
-        rank={(currentRank?.rank as 1 | 2 | 3 | undefined) ?? null}
-        onClose={() => setCelebrationOpen(false)}
+        items={celebrationItems}
+        onClose={() => {
+          setCelebrationOpen(false);
+          setCelebrationItems([]);
+        }}
       />
       <div className="p-4 sm:p-8">
         <div className="mx-auto max-w-5xl space-y-5">
@@ -367,24 +470,45 @@ export default function DashboardPage() {
                 <div className="border-t border-[var(--border)] px-5 pb-5 pt-4">
                   <div className="grid gap-2 sm:grid-cols-2">
                     {classRoster.map((student, index) => {
-                      const badge = rosterBadgeMap.get(normalizePersonName(student.name));
+                      const badges = rosterBadgeMap.get(normalizePersonName(student.name)) ?? [];
 
                       return (
                         <div
                           key={student.name}
                           className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-3 py-2.5"
                         >
-                          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[11px] font-semibold text-[var(--foreground-muted)]">
+                          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[10px] font-semibold text-[var(--foreground-muted)]">
                             {index + 1}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="truncate text-[13px] font-medium text-[var(--foreground)]">{student.name}</p>
-                              <LeaderboardBadge badge={badge ?? null} />
+                            <p className="truncate text-[11px] font-medium text-[var(--foreground)]">{student.name}</p>
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              {student.note ? (
+                                <p className="truncate text-[11px] font-semibold text-[var(--primary)]">{student.note}</p>
+                              ) : (
+                                <span />
+                              )}
+                              {badges.length > 0 ? (
+                                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                                  {badges.map((item) => (
+                                    <LeaderboardBadge
+                                      key={`${student.name}-${item.category}-${item.rank}`}
+                                      badge={item.badge}
+                                      category={item.category}
+                                      label={`${item.rank}. sıra · ${
+                                        item.category === "approved"
+                                          ? "Onaylı soru"
+                                          : item.category === "solved"
+                                            ? "Çözülen soru"
+                                            : item.category === "correct"
+                                              ? "Doğru sayısı"
+                                              : "Quiz"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              ) : null}
                             </div>
-                            {student.note ? (
-                              <p className="truncate text-[11px] font-semibold text-[var(--primary)]">{student.note}</p>
-                            ) : null}
                           </div>
                         </div>
                       );

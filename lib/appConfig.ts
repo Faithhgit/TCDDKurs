@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.5.0";
+export const APP_VERSION = "1.5.2";
 
 export const RELEASE_TRIGGER_KEY = "release_notes_trigger";
 export const RELEASE_DISMISSED_KEY = "release_notes_dismissed_version";
