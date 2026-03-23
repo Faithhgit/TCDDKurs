@@ -65,6 +65,28 @@ function slotDateTime(date: string, time: string) {
   );
 }
 
+function startOfWeek(date: Date) {
+  const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = normalized.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  normalized.setDate(normalized.getDate() + diff);
+  return normalized;
+}
+
+function addDays(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function formatScheduleDate(date: Date) {
+  return date.toLocaleDateString("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -174,6 +196,25 @@ export default function DashboardPage() {
       lessonSlots.find((slot) => slotDateTime(slot.date, slot.start).getTime() > now.getTime()) ?? null;
 
     return { currentSlot, nextSlot };
+  }, [now]);
+
+  const weeklySchedule = useMemo(() => {
+    const weekStart = startOfWeek(now);
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(weekStart, index);
+      const slotsForDay = lessonSlots.filter((slot) => sameDay(parseScheduleDate(slot.date), date));
+      const firstSlot = slotsForDay[0] ?? null;
+      const lastSlot = slotsForDay.at(-1) ?? null;
+
+      return {
+        dayLabel: date.toLocaleDateString("tr-TR", { weekday: "long" }),
+        dateLabel: formatScheduleDate(date),
+        lesson: firstSlot?.lesson ?? null,
+        instructor: firstSlot?.instructor ?? null,
+        timeRange: firstSlot && lastSlot ? `${firstSlot.start} - ${lastSlot.end}` : null,
+      };
+    });
   }, [now]);
 
   const firstName = useMemo(() => {
@@ -526,7 +567,7 @@ export default function DashboardPage() {
               >
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Ders Programı</p>
-                  <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)]">Slot Tablosu</h2>
+                  <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)]">Haftalık Görünüm</h2>
                 </div>
                 <span className="text-xl text-[var(--foreground-muted)]">
                   {openSection === "schedule" ? "−" : "+"}
@@ -535,8 +576,28 @@ export default function DashboardPage() {
 
               {openSection === "schedule" && (
                 <div className="border-t border-[var(--border)] px-5 pb-5 pt-4">
-                  <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-4 py-6 text-sm text-[var(--foreground-muted)]">
-                    Slot tablosunun içini şimdilik boş bıraktık. Sonraki turda programı daha temiz bir görünümle dolduracağız.
+                  <div className="space-y-2.5">
+                    {weeklySchedule.map((entry) => (
+                      <div
+                        key={`schedule-${entry.dateLabel}-${entry.dayLabel}`}
+                        className="rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-muted)_94%,white),var(--surface-muted))] px-3 py-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-[12px] font-semibold capitalize text-[var(--foreground)]">{entry.dayLabel}</p>
+                          <p className="shrink-0 text-[12px] text-[var(--foreground-muted)]">{entry.dateLabel}</p>
+                        </div>
+                        {entry.lesson ? (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-[13px] font-medium leading-5 text-[var(--foreground)]">{entry.lesson}</p>
+                            <p className="text-[12px] leading-5 text-[var(--foreground-muted)]">
+                              {entry.timeRange} · {entry.instructor}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-[12px] leading-5 text-[var(--foreground-muted)]">Bu gün için ders görünmüyor.</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
