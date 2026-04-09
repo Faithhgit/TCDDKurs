@@ -101,6 +101,10 @@ export default function DashboardPage() {
     correct: [],
     quiz: [],
   });
+  const [canAccessMakinistGuide, setCanAccessMakinistGuide] = useState(false);
+  const [makinistGuideMessage, setMakinistGuideMessage] = useState(
+    "Bu modül şu an hesabınıza açık değil. Erişim tanımlanması için yöneticinizle iletişime geçin."
+  );
   const [celebrationItems, setCelebrationItems] = useState<LeaderboardCelebrationItem[]>([]);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
   const lastCelebrationSignatureRef = useRef("");
@@ -131,6 +135,11 @@ export default function DashboardPage() {
         setName(data.user.user_metadata?.name || data.user.email || "Arkadaş");
       }
 
+      setCanAccessMakinistGuide(profile?.can_access_makinist_guide === true);
+      setMakinistGuideMessage(
+        profile?.makinist_guide_message?.trim() ||
+          "Bu modül şu an hesabınıza açık değil. Erişim tanımlanması için yöneticinizle iletişime geçin."
+      );
       setLoading(false);
     }
 
@@ -406,6 +415,25 @@ export default function DashboardPage() {
             </div>
           </section>
 
+          <section className="rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-5 shadow-[var(--shadow-soft)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Ek Modül</p>
+                <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Lokomotif Bilgi Rehberi</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--foreground-muted)]">
+                  Lokomotif serileri, jeneratör vagonları ve kaza / olay içerikleri bu modülde toplandı.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/makinist-v01"
+                className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
+              >
+                Modülü Aç
+              </Link>
+            </div>
+          </section>
+
           <section className="grid gap-4 lg:grid-cols-2">
             <article className="rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-5 shadow-[var(--shadow-soft)]">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Ders Durumu</p>
@@ -485,6 +513,33 @@ export default function DashboardPage() {
           </section>
 
           <AdsenseBanner />
+
+          <section hidden className="rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-5 shadow-[var(--shadow-soft)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--primary)]">Ek Modül</p>
+                <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Lokomotif Bilgi Rehberi</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--foreground-muted)]">
+                  {canAccessMakinistGuide
+                    ? "Lokomotif serileri, jeneratör vagonları ve kaza / olay içerikleri bu modülde toplandı."
+                    : makinistGuideMessage}
+                </p>
+              </div>
+
+              {canAccessMakinistGuide ? (
+                <Link
+                  href="/dashboard/makinist-v01"
+                  className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
+                >
+                  Modülü Aç
+                </Link>
+              ) : (
+                <span className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--foreground-muted)]">
+                  Erişim Kapalı
+                </span>
+              )}
+            </div>
+          </section>
 
           <section className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <article className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] shadow-[var(--shadow-soft)]">

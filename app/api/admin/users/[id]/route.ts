@@ -12,6 +12,29 @@ import {
   validateRequiredString,
 } from "@/lib/server/validation";
 
+const SELECT_FIELDS_WITH_GUIDE =
+  "id, name, email, role, is_active, admin_note, can_access_makinist_guide, makinist_guide_message, created_at";
+const SELECT_FIELDS_WITHOUT_GUIDE = "id, name, email, role, is_active, admin_note, created_at";
+
+function hasMakinistGuideColumnError(message?: string) {
+  return (
+    message?.includes("can_access_makinist_guide") === true ||
+    message?.includes("makinist_guide_message") === true
+  );
+}
+
+function normalizeUser<T extends Record<string, unknown>>(item: T) {
+  return {
+    ...item,
+    can_access_makinist_guide:
+      typeof item.can_access_makinist_guide === "boolean" ? item.can_access_makinist_guide : false,
+    makinist_guide_message:
+      typeof item.makinist_guide_message === "string" || item.makinist_guide_message === null
+        ? item.makinist_guide_message
+        : null,
+  };
+}
+
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -38,16 +61,31 @@ export async function PATCH(
       return NextResponse.json({ error: isActive.error }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const primaryRes = await supabaseAdmin
       .from("users")
       .update({ is_active: isActive.value })
       .eq("id", id)
-      .select("id, name, email, role, is_active, admin_note, created_at")
+      .select(SELECT_FIELDS_WITH_GUIDE)
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    const fallbackRes =
+      primaryRes.error && hasMakinistGuideColumnError(primaryRes.error.message)
+        ? await supabaseAdmin
+            .from("users")
+            .update({ is_active: isActive.value })
+            .eq("id", id)
+            .select(SELECT_FIELDS_WITHOUT_GUIDE)
+            .single()
+        : null;
+
+    const rawData = (fallbackRes?.data ?? primaryRes.data) as Record<string, unknown> | null;
+    const error = fallbackRes?.error ?? primaryRes.error;
+
+    if (error || !rawData) {
+      return NextResponse.json({ error: error?.message ?? "Kullanıcı güncellenemedi." }, { status: 400 });
     }
+
+    const data = normalizeUser(rawData);
 
     await writeAuditLog({
       actor: {
@@ -103,24 +141,63 @@ export async function PATCH(
     return NextResponse.json({ error: adminNote.error }, { status: 400 });
   }
 
+  const canAccessMakinistGuide = validateBoolean(
+    rawBody.can_access_makinist_guide,
+    "Lokomotif rehberi erişimi"
+  );
+  if (!canAccessMakinistGuide.ok) {
+    return NextResponse.json({ error: canAccessMakinistGuide.error }, { status: 400 });
+  }
+
+  const makinistGuideMessage = validateOptionalString(rawBody.makinist_guide_message, {
+    field: "Lokomotif rehberi mesajı",
+    max: 1000,
+  });
+  if (!makinistGuideMessage.ok) {
+    return NextResponse.json({ error: makinistGuideMessage.error }, { status: 400 });
+  }
+
   const patch = {
     name: name.value,
     email: email.value,
     role: role.value,
     is_active: isActive.value,
     admin_note: adminNote.value,
+    can_access_makinist_guide: canAccessMakinistGuide.value,
+    makinist_guide_message: makinistGuideMessage.value,
   };
 
-  const { data, error } = await supabaseAdmin
+  const primaryRes = await supabaseAdmin
     .from("users")
     .update(patch)
     .eq("id", id)
-    .select("id, name, email, role, is_active, admin_note, created_at")
+    .select(SELECT_FIELDS_WITH_GUIDE)
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  const fallbackRes =
+    primaryRes.error && hasMakinistGuideColumnError(primaryRes.error.message)
+      ? await supabaseAdmin
+          .from("users")
+          .update({
+            name: name.value,
+            email: email.value,
+            role: role.value,
+            is_active: isActive.value,
+            admin_note: adminNote.value,
+          })
+          .eq("id", id)
+          .select(SELECT_FIELDS_WITHOUT_GUIDE)
+          .single()
+      : null;
+
+  const rawData = (fallbackRes?.data ?? primaryRes.data) as Record<string, unknown> | null;
+  const error = fallbackRes?.error ?? primaryRes.error;
+
+  if (error || !rawData) {
+    return NextResponse.json({ error: error?.message ?? "Kullanıcı güncellenemedi." }, { status: 400 });
   }
+
+  const data = normalizeUser(rawData);
 
   await writeAuditLog({
     actor: {

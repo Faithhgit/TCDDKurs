@@ -75,7 +75,11 @@ export async function POST(request: NextRequest) {
   }
 
   await writeAuditLog({
-    actor: auth.profile,
+    actor: {
+      id: auth.profile.id,
+      name: auth.profile.name ?? null,
+      role: auth.profile.role ?? null,
+    },
     action: "announcement_created",
     target_type: "announcement",
     target_id: String(data.id),
@@ -84,4 +88,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ data });
 }
-

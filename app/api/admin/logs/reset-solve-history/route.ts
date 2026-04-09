@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
   const questionProgressCount = questionProgressCountRes.count ?? 0;
 
   await writeAuditLog({
-    actor: auth.profile,
+    actor: {
+      id: auth.profile.id,
+      name: auth.profile.name ?? null,
+      role: auth.profile.role ?? null,
+    },
     action: "solve_history_reset",
     target_type: "solve_history",
     summary: `Cozum kayitlari temizlendi. Quiz: ${quizAttemptsCount}, attempts: ${questionAttemptsCount}, progress: ${questionProgressCount}`,

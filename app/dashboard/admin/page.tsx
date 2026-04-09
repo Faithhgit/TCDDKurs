@@ -600,6 +600,8 @@ export default function AdminPage() {
           role: selectedUser.role,
           is_active: selectedUser.is_active,
           admin_note: selectedUser.admin_note?.trim() || null,
+          can_access_makinist_guide: selectedUser.can_access_makinist_guide === true,
+          makinist_guide_message: selectedUser.makinist_guide_message?.trim() || null,
         }
       : { is_active: selectedUser.is_active };
 
@@ -1179,6 +1181,26 @@ export default function AdminPage() {
                     <input value={selectedUser.email ?? ""} onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })} className={inputClass} />
                     <select value={selectedUser.role} onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value as UserRole })} className={inputClass}><option value="student">Öğrenci</option><option value="admin">Admin</option><option value="manager">Yönetici</option></select>
                     <textarea value={selectedUser.admin_note ?? ""} onChange={(e) => setSelectedUser({ ...selectedUser, admin_note: e.target.value })} placeholder="İç not" className="min-h-28 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3" />
+                    <label className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--foreground)]">
+                      <input
+                        type="checkbox"
+                        checked={selectedUser.can_access_makinist_guide === true}
+                        onChange={(e) =>
+                          setSelectedUser({
+                            ...selectedUser,
+                            can_access_makinist_guide: e.target.checked,
+                          })
+                        }
+                        className="h-4 w-4 rounded border-[var(--border)]"
+                      />
+                      <span>Lokomotif Bilgi Rehberi erişimi açık</span>
+                    </label>
+                    <textarea
+                      value={selectedUser.makinist_guide_message ?? ""}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, makinist_guide_message: e.target.value })}
+                      placeholder="Erişim yoksa kullanıcıya gösterilecek mesaj"
+                      className="min-h-28 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                    />
                     <div className="flex gap-2">
                       <button onClick={() => saveUser(true)} disabled={savingUser} className="rounded-2xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-70">{savingUser ? "Kaydediliyor..." : "Bilgileri Kaydet"}</button>
                       <button onClick={() => setSelectedUser({ ...selectedUser, is_active: !selectedUser.is_active })} className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white ${selectedUser.is_active ? "bg-rose-600" : "bg-emerald-600"}`}>{selectedUser.is_active ? "Banla" : "Banı Kaldır"}</button>
@@ -1191,6 +1213,9 @@ export default function AdminPage() {
                       <p className="font-medium text-[var(--foreground)]">{selectedUser.name}</p>
                       <p className="mt-1 break-all text-sm text-[var(--foreground-muted)]">{selectedUser.email || "E-posta bilgisi yok"}</p>
                       <p className="mt-1 text-sm text-[var(--foreground-muted)]">Rol: {roleLabel(selectedUser.role)}</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Lokomotif rehberi erişimi: {selectedUser.can_access_makinist_guide ? "Açık" : "Kapalı"}
+                      </p>
                     </div>
                     <button onClick={() => void toggleUserBan()} disabled={savingUser} className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-70 ${selectedUser.is_active ? "bg-rose-600" : "bg-emerald-600"}`}>{savingUser ? "Kaydediliyor..." : selectedUser.is_active ? "Üyeyi Banla" : "Banı Kaldır"}</button>
                   </>

@@ -11,13 +11,15 @@ export type UserRow = {
   role: UserRole;
   is_active: boolean;
   admin_note?: string | null;
+  can_access_makinist_guide?: boolean;
+  makinist_guide_message?: string | null;
   created_at?: string | null;
 };
 
 export async function fetchUsersForAdmin() {
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, email, role, is_active, admin_note, created_at")
+    .select("id, name, email, role, is_active, admin_note, can_access_makinist_guide, makinist_guide_message, created_at")
     .order("created_at", { ascending: false });
 
   if (!error) {
@@ -40,7 +42,7 @@ export async function updateUserForAdmin(
     .from("users")
     .update(input)
     .eq("id", id)
-    .select("id, name, email, role, is_active, admin_note, created_at")
+    .select("id, name, email, role, is_active, admin_note, can_access_makinist_guide, makinist_guide_message, created_at")
     .single();
 
   if (!primary.error) {

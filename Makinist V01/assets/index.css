@@ -1,0 +1,32 @@
+
+.indexrow{
+margin: 0 auto 0 auto;
+display:block;
+width:98%;
+padding:15px 0 15px 0;
+border-bottom:1px solid #DDDDDD;
+}
+.leftside{
+margin: 0 auto 0 auto;
+display:inline-block;
+width:48%;
+border-right:1px solid #DDDDDD;
+
+}
+.rightside{
+margin: 0 auto 0 auto;
+display:inline-block;
+width:48%;
+}
+.indeximg{
+width:60%;
+display:block;
+margin: 0 auto 0 auto;
+}
+.indexname{
+display:block;
+font-size:19px;
+text-align:center;
+margin: 0 auto 0 auto;
+font-weight:bold;
+}

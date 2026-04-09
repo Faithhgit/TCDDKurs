@@ -47,7 +47,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   await writeAuditLog({
-    actor: auth.profile,
+    actor: {
+      id: auth.profile.id,
+      name: auth.profile.name ?? null,
+      role: auth.profile.role ?? null,
+    },
     action: "announcement_updated",
     target_type: "announcement",
     target_id: String(data.id),
@@ -78,7 +82,11 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   }
 
   await writeAuditLog({
-    actor: auth.profile,
+    actor: {
+      id: auth.profile.id,
+      name: auth.profile.name ?? null,
+      role: auth.profile.role ?? null,
+    },
     action: "announcement_deleted",
     target_type: "announcement",
     target_id: id,

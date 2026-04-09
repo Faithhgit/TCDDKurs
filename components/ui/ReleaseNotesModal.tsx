@@ -6,8 +6,11 @@ import { useEffect, useState } from "react";
 import { APP_VERSION, RELEASE_DISMISSED_KEY, RELEASE_TRIGGER_KEY } from "@/lib/appConfig";
 
 const updates = [
-  "Yeni ders programı eklendi.",
-  "Bazı hatalar giderildi ve düzenlemeler yapıldı.",
+  "Lokomotif Bilgi Rehberi modülü eklendi.",
+  "Rehber için kullanıcı bazlı erişim sistemi getirildi.",
+  "Rehber modülü dashboard ana sayfasına bağlandı.",
+  "Rehber ekranı mobil uyum ve arayüz düzenlemeleriyle güncellendi.",
+  "Bazı hata ve metin sorunları giderildi.",
 ];
 
 function shouldCheckPath(pathname: string) {
@@ -59,10 +62,10 @@ export default function ReleaseNotesModal() {
         <div className="my-auto w-full max-w-2xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_24px_80px_rgba(15,23,42,0.22)] max-sm:max-h-[calc(100dvh-2rem)] max-sm:overflow-y-auto sm:p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--primary)]">Sürüm Notu</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)] sm:text-2xl">
-            1.5.3 sürümünde neler değişti?
+            1.6.0 sürümünde neler değişti?
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
-            Bu sürümde ders programı güncellendi ve çeşitli düzenlemeler yapıldı.
+            Bu sürümde yeni rehber modülü eklendi ve erişim akışı güncellendi.
           </p>
 
           <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">

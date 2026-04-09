@@ -28,11 +28,30 @@ export async function requireUser(request: NextRequest) {
     return { error: "Geçersiz oturum.", status: 401 as const };
   }
 
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const primaryProfileRes = await supabaseAdmin
     .from("users")
-    .select("id, role, is_active, name, email")
+    .select("id, role, is_active, name, email, can_access_makinist_guide, makinist_guide_message")
     .eq("id", user.id)
     .single();
+
+  const fallbackProfileRes =
+    primaryProfileRes.error?.message?.includes("can_access_makinist_guide") ||
+    primaryProfileRes.error?.message?.includes("makinist_guide_message")
+      ? await supabaseAdmin.from("users").select("id, role, is_active, name, email").eq("id", user.id).single()
+      : null;
+
+  const profile = (fallbackProfileRes?.data ?? primaryProfileRes.data)
+    ? {
+        ...(fallbackProfileRes?.data ?? primaryProfileRes.data),
+        can_access_makinist_guide:
+          (primaryProfileRes.data as { can_access_makinist_guide?: boolean } | null)?.can_access_makinist_guide ??
+          false,
+        makinist_guide_message:
+          (primaryProfileRes.data as { makinist_guide_message?: string | null } | null)?.makinist_guide_message ??
+          null,
+      }
+    : null;
+  const profileError = fallbackProfileRes?.error ?? primaryProfileRes.error;
 
   if (profileError || !profile) {
     return { error: "Kullanıcı profili bulunamadı.", status: 403 as const };
