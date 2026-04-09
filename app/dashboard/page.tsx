@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppLoadingScreen from "@/components/ui/AppLoadingScreen";
-import AdsenseBanner from "@/components/ui/AdsenseBanner";
 import LeaderboardCelebrationModal, {
   type LeaderboardCelebrationItem,
 } from "@/components/ui/LeaderboardCelebrationModal";
@@ -511,8 +510,6 @@ export default function DashboardPage() {
               </div>
             </article>
           </section>
-
-          <AdsenseBanner />
 
           <section hidden className="rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_98%,white),var(--surface))] p-5 shadow-[var(--shadow-soft)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
