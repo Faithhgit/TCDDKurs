@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import AppButton from "@/components/ui/AppButton";
 
 import { APP_VERSION } from "@/lib/appConfig";
 import { signInWithEmail } from "@/lib/auth";
@@ -136,13 +137,9 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="min-h-12 w-full rounded-2xl bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
-              >
-                {loading ? "Giriliyor..." : "Giriş Yap"}
-              </button>
+              <AppButton type="submit" loading={loading} loadingText="Giriliyor..." fullWidth size="lg">
+                Giri? Yap
+              </AppButton>
             </form>
           </div>
 
@@ -165,3 +162,6 @@ export default function LoginPage() {
     </main>
   );
 }
+
+
+

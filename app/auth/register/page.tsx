@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import AdsenseBanner from "@/components/ui/AdsenseBanner";
+import AppButton from "@/components/ui/AppButton";
 import { APP_VERSION } from "@/lib/appConfig";
 import { createUserProfile, registerWithEmail, signInWithEmail } from "@/lib/auth";
 import {
@@ -240,13 +241,15 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              <button
+              <AppButton
                 type="submit"
-                disabled={loading}
-                className="min-h-12 w-full rounded-2xl bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
+                loading={loading}
+                loadingText="Kay?t olu?turuluyor..."
+                fullWidth
+                size="lg"
               >
-                {loading ? "Kayıt oluşturuluyor..." : "Kayıt Ol"}
-              </button>
+                Kay?t Ol
+              </AppButton>
             </form>
           </div>
 
@@ -267,3 +270,6 @@ export default function RegisterPage() {
     </main>
   );
 }
+
+
+

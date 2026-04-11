@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import AppButton from "@/components/ui/AppButton";
 
 import { APP_VERSION } from "@/lib/appConfig";
 import { updatePassword } from "@/lib/auth";
@@ -149,13 +150,15 @@ export default function ResetPasswordPage() {
                   </div>
                 )}
 
-                <button
+                <AppButton
                   type="submit"
-                  disabled={loading}
-                  className="min-h-12 w-full rounded-2xl bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
+                  loading={loading}
+                  loadingText="Kaydediliyor..."
+                  fullWidth
+                  size="lg"
                 >
-                  {loading ? "Kaydediliyor..." : "Yeni Şifreyi Kaydet"}
-                </button>
+                  Yeni ?ifreyi Kaydet
+                </AppButton>
               </form>
             )}
           </div>
@@ -174,3 +177,6 @@ export default function ResetPasswordPage() {
     </main>
   );
 }
+
+
+

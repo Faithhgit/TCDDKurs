@@ -4,8 +4,10 @@ import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AppNavbar from "@/components/ui/AppNavbar";
+import AppButton from "@/components/ui/AppButton";
 import { getUserProfile } from "@/lib/auth";
-import { addTopic, fetchTopics, updateTopic, type TopicRow } from "@/lib/questions";
+import { authorizedFetch } from "@/lib/clientApi";
+import { type TopicRow } from "@/lib/questions";
 import { supabase } from "@/lib/supabaseClient";
 
 function toSlug(value: string) {
@@ -13,7 +15,7 @@ function toSlug(value: string) {
     .toLocaleLowerCase("tr-TR")
     .trim()
     .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-ğüşıöç]/gi, "")
+    .replace(/[^a-z0-9-ğüşiöç]/gi, "")
     .replace(/-+/g, "-");
 }
 
@@ -23,7 +25,9 @@ export default function TopicsAdminPage() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [toggleTopicId, setToggleTopicId] = useState<number | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
@@ -32,8 +36,17 @@ export default function TopicsAdminPage() {
   const [editActive, setEditActive] = useState(true);
 
   async function refreshTopics() {
-    const { data } = await fetchTopics(true);
-    if (data) setTopics(data as TopicRow[]);
+    const response = await authorizedFetch("/api/admin/topics", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = (await response.json().catch(() => null)) as { items?: TopicRow[] } | null;
+    setTopics(payload?.items ?? []);
   }
 
   useEffect(() => {
@@ -51,9 +64,17 @@ export default function TopicsAdminPage() {
         return;
       }
 
-      const result = await fetchTopics(true);
+      const response = await authorizedFetch("/api/admin/topics", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const payload = response.ok
+        ? ((await response.json().catch(() => null)) as { items?: TopicRow[] } | null)
+        : null;
+
       startTransition(() => {
-        setTopics((result.data ?? []) as TopicRow[]);
+        setTopics(payload?.items ?? []);
         setPageLoading(false);
       });
     }
@@ -87,12 +108,16 @@ export default function TopicsAdminPage() {
       return;
     }
 
-    setLoading(true);
-    const { error } = await addTopic({ title: title.trim(), slug: finalSlug });
-    setLoading(false);
+    setAddLoading(true);
+    const response = await authorizedFetch("/api/admin/topics", {
+      method: "POST",
+      body: JSON.stringify({ title: title.trim(), slug: finalSlug }),
+    });
+    setAddLoading(false);
 
-    if (error) {
-      setMessage(error.message);
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setMessage(payload?.error ?? "Konu eklenemedi.");
       return;
     }
 
@@ -124,16 +149,20 @@ export default function TopicsAdminPage() {
       return;
     }
 
-    setLoading(true);
-    const { error } = await updateTopic(editingTopicId, {
-      title: editTitle.trim(),
-      slug: finalSlug,
-      is_active: editActive,
+    setEditLoading(true);
+    const response = await authorizedFetch(`/api/admin/topics/${editingTopicId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: editTitle.trim(),
+        slug: finalSlug,
+        is_active: editActive,
+      }),
     });
-    setLoading(false);
+    setEditLoading(false);
 
-    if (error) {
-      setMessage(error.message || "Konu güncellenemedi.");
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setMessage(payload?.error ?? "Konu güncellenemedi.");
       return;
     }
 
@@ -144,10 +173,16 @@ export default function TopicsAdminPage() {
 
   async function toggleActive(topic: TopicRow) {
     setMessage("");
-    const { error } = await updateTopic(topic.id, { is_active: !topic.is_active });
+    setToggleTopicId(topic.id);
+    const response = await authorizedFetch(`/api/admin/topics/${topic.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: !topic.is_active }),
+    });
+    setToggleTopicId(null);
 
-    if (error) {
-      setMessage(error.message || "Konu durumu güncellenemedi.");
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setMessage(payload?.error ?? "Konu durumu güncellenemedi.");
       return;
     }
 
@@ -212,13 +247,14 @@ export default function TopicsAdminPage() {
                   className="min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4"
                 />
               </div>
-              <button
+              <AppButton
                 onClick={handleAddTopic}
-                disabled={loading}
-                className="mt-3 rounded-2xl bg-[var(--primary)] px-4 py-2 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
+                loading={addLoading}
+                loadingText="Kaydediliyor..."
+                className="mt-3"
               >
-                {loading ? "Kaydediliyor..." : "Konu Ekle"}
-              </button>
+                Konu Ekle
+              </AppButton>
             </section>
 
             <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
@@ -246,16 +282,12 @@ export default function TopicsAdminPage() {
                     Aktif konu olarak kalsın
                   </label>
                   <div className="flex gap-2">
-                    <button
-                      onClick={handleSaveTopic}
-                      disabled={loading}
-                      className="rounded-2xl bg-[var(--primary)] px-4 py-2 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
-                    >
+                                        <AppButton onClick={handleSaveTopic} loading={editLoading} loadingText="Kaydediliyor...">
                       Kaydet
-                    </button>
-                    <button onClick={resetEditForm} className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm">
+                    </AppButton>
+                    <AppButton onClick={resetEditForm} variant="outline">
                       Vazgeç
-                    </button>
+                    </AppButton>
                   </div>
                 </div>
               )}
@@ -280,15 +312,17 @@ export default function TopicsAdminPage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button onClick={() => startEditing(topic)} className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm">
+                      <AppButton onClick={() => startEditing(topic)} variant="outline">
                         Düzenle
-                      </button>
-                      <button
+                      </AppButton>
+                      <AppButton
                         onClick={() => toggleActive(topic)}
-                        className="rounded-2xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white dark:bg-slate-200 dark:text-slate-900"
+                        loading={toggleTopicId === topic.id}
+                        loadingText="Güncelleniyor..."
+                        variant={topic.is_active ? "secondary" : "success"}
                       >
                         {topic.is_active ? "Pasife Al" : "Aktif Et"}
-                      </button>
+                      </AppButton>
                     </div>
                   </div>
                 ))}
@@ -300,3 +334,9 @@ export default function TopicsAdminPage() {
     </main>
   );
 }
+
+
+
+
+
+

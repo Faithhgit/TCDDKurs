@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import AppButton from "@/components/ui/AppButton";
 
 import { APP_VERSION } from "@/lib/appConfig";
 import { requestPasswordReset } from "@/lib/auth";
@@ -90,13 +91,15 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              <button
+              <AppButton
                 type="submit"
-                disabled={loading}
-                className="min-h-12 w-full rounded-2xl bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
+                loading={loading}
+                loadingText="G?nderiliyor..."
+                fullWidth
+                size="lg"
               >
-                {loading ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
-              </button>
+                S?f?rlama Ba?lant?s? G?nder
+              </AppButton>
             </form>
           </div>
 
@@ -114,3 +117,6 @@ export default function ForgotPasswordPage() {
     </main>
   );
 }
+
+
+

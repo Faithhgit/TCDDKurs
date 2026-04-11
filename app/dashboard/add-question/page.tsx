@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import AppButton from "@/components/ui/AppButton";
 
 import AppNavbar from "@/components/ui/AppNavbar";
 import { getUserProfile } from "@/lib/auth";
@@ -607,13 +608,9 @@ export default function AddQuestionPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="min-h-11 w-full rounded-[18px] bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--primary-foreground)] disabled:opacity-70"
-              >
-                {loading ? "Gönderiliyor..." : "Soruyu Gönder"}
-              </button>
+              <AppButton type="submit" loading={loading} loadingText="G?nderiliyor..." fullWidth>
+                Soruyu G?nder
+              </AppButton>
             </form>
           )}
         </div>
@@ -621,3 +618,6 @@ export default function AddQuestionPage() {
     </main>
   );
 }
+
+
+
